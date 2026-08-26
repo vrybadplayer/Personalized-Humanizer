@@ -11,5 +11,5 @@ OUTPUT_DIR = BASE_DIR / "data" / "output"
 SPACY_MODEL = "en_core_web_md"
 
 # LLM settings (Ollama)
-OLLAMA_MODEL = "deepseek-r1:14b"
+OLLAMA_MODEL = "deepseek-r1:8b"
 OLLAMA_API_URL = "http://localhost:11434"
