@@ -17,17 +17,12 @@ def main():
 
     response = ollama.chat(
         model=OLLAMA_MODEL,
-        messages=[
-            {
-                "role": "user",
-                "content": prompt,
-            }
-        ],
+        messages=[{"role": "user", "content": prompt}],
         options={
-            "temperature": 0.7,
-            "num_predict": 3000,
+            "temperature": 0.4,
+            "num_predict": 1200,
             "top_p": 0.9,
-            "num_ctx": OLLAMA_CONTEXT_SIZE,   # <--- added
+            "num_ctx": OLLAMA_CONTEXT_SIZE,
         },
     )
 
