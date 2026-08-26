@@ -1,10 +1,7 @@
-/.env
-/__extra__
-
 # Python
 __pycache__/
 *.py[cod]
-venv/
+.venv311/
 .env
 
 # Data (keep raw and clean local, but not in Git if large)
@@ -18,3 +15,4 @@ data/output/*
 
 # VS Code
 .vscode/
+/__extra__
