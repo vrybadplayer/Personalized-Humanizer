@@ -6,6 +6,7 @@ RAW_DATA_DIR = BASE_DIR / "data" / "raw"
 CLEAN_DATA_DIR = BASE_DIR / "data" / "clean"
 PROFILE_DIR = BASE_DIR / "data" / "profiles"
 OUTPUT_DIR = BASE_DIR / "data" / "output"
+OLLAMA_CONTEXT_SIZE = 16384
 
 # spaCy model to use (install with: python -m spacy download en_core_web_md)
 SPACY_MODEL = "en_core_web_md"
