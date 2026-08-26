@@ -16,3 +16,5 @@ data/output/*
 # VS Code
 .vscode/
 /__extra__
+
+/temp

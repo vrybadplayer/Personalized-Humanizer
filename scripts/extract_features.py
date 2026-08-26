@@ -120,7 +120,6 @@ def count_contractions(text):
     text_lower = text.lower()
     count = 0
     for c in CONTRACTIONS:
-        # count whole word occurrences
         count += len(re.findall(r'\b' + re.escape(c) + r'\b', text_lower))
     return count
 
@@ -153,7 +152,6 @@ def sentence_starters(doc, top_n=10):
     return freq.most_common(top_n)
 
 def punctuation_per_sentence(doc, text):
-    # Count punctuation per sentence for common marks
     sentences = list(doc.sents)
     if not sentences:
         return {}
@@ -162,25 +160,113 @@ def punctuation_per_sentence(doc, text):
     for char in text:
         if char in ".,;:!?":
             punct_counts[char] += 1
-    # per sentence
     return {char: count / total_sentences for char, count in punct_counts.items()}
 
+def classify_sentence_type(sent):
+    """Classify sentence based on clause structure (approximate)."""
+    finite_verbs = sum(
+        1 for tok in sent
+        if tok.pos_ in ("VERB", "AUX") and tok.morph.get("VerbForm") == ["Fin"]
+    )
+    # Count coordinating conjunctions that join independent clauses (simplified)
+    coordinators = sum(1 for tok in sent if tok.dep_ == "cc")
+    # Count subordinating conjunctions or relative pronouns
+    subordinators = sum(
+        1 for tok in sent
+        if tok.dep_ == "mark" or (tok.dep_ == "relcl" and tok.pos_ == "PRON")
+    )
+
+    if finite_verbs <= 1:
+        return "simple"
+    elif coordinators > 0 and subordinators > 0:
+        return "compound-complex"
+    elif coordinators > 0:
+        return "compound"
+    elif subordinators > 0:
+        return "complex"
+    else:
+        # More than one finite verb but no clear marker; treat as complex
+        return "complex"
+
+def sentence_type_distribution(doc):
+    types = Counter()
+    for sent in doc.sents:
+        stype = classify_sentence_type(sent)
+        types[stype] += 1
+    total = sum(types.values())
+    if total == 0:
+        return {}
+    return {k: v / total for k, v in types.items()}
+
+def clause_complexity(doc):
+    """Return average clauses per sentence and subordinate clause ratio."""
+    total_sentences = 0
+    total_clauses = 0
+    total_subordinate = 0
+    sentences_with_subordinate = 0
+
+    for sent in doc.sents:
+        total_sentences += 1
+        # Count finite verbs as approximation of clauses
+        finite_verbs = sum(
+            1 for tok in sent
+            if tok.pos_ in ("VERB", "AUX") and tok.morph.get("VerbForm") == ["Fin"]
+        )
+        total_clauses += finite_verbs
+
+        # Count subordinating conjunctions and relative pronouns introducing subordinate clauses
+        subord = sum(
+            1 for tok in sent
+            if tok.dep_ == "mark" or (tok.dep_ == "relcl" and tok.pos_ == "PRON")
+        )
+        total_subordinate += subord
+        if subord > 0:
+            sentences_with_subordinate += 1
+
+    avg_clauses = total_clauses / total_sentences if total_sentences else 0
+    subord_ratio = total_subordinate / total_clauses if total_clauses else 0
+    subord_sentence_ratio = sentences_with_subordinate / total_sentences if total_sentences else 0
+
+    return {
+        "avg_clauses_per_sentence": avg_clauses,
+        "subordinate_clause_ratio": subord_ratio,          # now between 0 and 1
+        "sentences_with_subordinate_ratio": subord_sentence_ratio
+    }
+
+def paragraph_stats(text):
+    paragraphs = [p for p in text.split('\n\n') if p.strip()]
+    if len(paragraphs) < 2:
+        return None
+    lengths = [len(p.split()) for p in paragraphs]
+    if len(lengths) < 4:  # need at least 4 for percentiles
+        percentiles = [0, 0, 0]
+    else:
+        percentiles = statistics.quantiles(lengths, n=4)
+    return {
+        "avg_words": statistics.mean(lengths),
+        "median_words": statistics.median(lengths),
+        "stdev_words": statistics.stdev(lengths) if len(lengths) > 1 else 0,
+        "percentiles": percentiles,
+        "total_paragraphs": len(paragraphs)
+    }
+
 def discourse_marker_positions(doc):
-    # For each transition word, count occurrences and positions
+    """For each transition word, compute total occurrences and sentence-initial count."""
     marker_info = {}
+    text_lower = " ".join(sent.text.strip().lower() for sent in doc.sents)
     for marker in TRANSITION_WORDS:
-        sentence_initial = 0
-        total = 0
+        total_count = text_lower.count(marker)
+        if total_count == 0:
+            continue
+        initial_count = 0
         for sent in doc.sents:
-            sent_text = sent.text.strip().lower()
-            if sent_text.startswith(marker):
-                sentence_initial += 1
-            # count total occurrences in the whole text (approximate)
-        # We'll compute total occurrences separately using text search
-        # because using sentences for total is expensive; we'll just count sentence-initial for now
-        # In summarize we may only need initial position info.
-        if sentence_initial > 0:
-            marker_info[marker] = {"sentence_initial": sentence_initial}
+            if sent.text.strip().lower().startswith(marker):
+                initial_count += 1
+        marker_info[marker] = {
+            "total_count": total_count,
+            "sentence_initial_count": initial_count,
+            "initial_percentage": initial_count / total_count if total_count else 0
+        }
     return marker_info
 
 def extract_features(text):
@@ -221,19 +307,13 @@ def extract_features(text):
         if count > 0:
             function_freq[fw] = count / total_words
 
-    # Deviations from baseline (overuse/underuse)
     deviations = {}
     for word, baseline in FUNCTION_WORDS.items():
         actual = function_freq.get(word, 0)
         if actual > 0 and baseline > 0:
             ratio = actual / baseline
             if ratio > 1.3 or ratio < 0.7:
-                deviations[word] = {
-                    "actual": actual,
-                    "baseline": baseline,
-                    "ratio": ratio
-                }
-    # Sort deviations by ratio (overuse first)
+                deviations[word] = {"actual": actual, "baseline": baseline, "ratio": ratio}
     overused = {k: v for k, v in deviations.items() if v["ratio"] > 1}
     underused = {k: v for k, v in deviations.items() if v["ratio"] < 1}
     overused_sorted = sorted(overused.items(), key=lambda x: x[1]["ratio"], reverse=True)[:5]
@@ -254,6 +334,12 @@ def extract_features(text):
     avg_verbs_per_sentence = statistics.mean(verbs_per_sentence) if verbs_per_sentence else 0
     passive_ratio = detect_passive_voice(doc)
 
+    # New: sentence type distribution
+    sent_type_dist = sentence_type_distribution(doc)
+
+    # New: clause complexity
+    clause_info = clause_complexity(doc)
+
     # Punctuation (per 100 words and per sentence)
     punct_counts = Counter()
     for char in text:
@@ -273,16 +359,8 @@ def extract_features(text):
         count = text.lower().count(tw)
         if count > 0:
             transition_freq[tw] = count / total_words
-    # sentence_initial info
-    marker_positions = {}
-    for marker in TRANSITION_WORDS:
-        initial_count = 0
-        for sent in doc.sents:
-            sent_text = sent.text.strip().lower()
-            if sent_text.startswith(marker):
-                initial_count += 1
-        if initial_count > 0:
-            marker_positions[marker] = initial_count
+    # New: discourse marker positions (total, initial, percentage)
+    marker_positions = discourse_marker_positions(doc)
 
     # Hedging and boosters
     hedging_counts = {}
@@ -306,25 +384,15 @@ def extract_features(text):
     # Sentence starters
     starters = sentence_starters(doc, top_n=10)
 
-    # Paragraph stats (requires double newlines in text)
-    paragraphs = [p for p in text.split('\n\n') if p.strip()]
-    if len(paragraphs) > 1:
-        para_lengths = [len(p.split()) for p in paragraphs]
-        paragraph_stats = {
-            "avg_words": statistics.mean(para_lengths),
-            "median_words": statistics.median(para_lengths),
-            "stdev_words": statistics.stdev(para_lengths) if len(para_lengths) > 1 else 0,
-            "total_paragraphs": len(paragraphs)
-        }
-    else:
-        paragraph_stats = None
+    # New: paragraph stats with percentiles
+    para_stats = paragraph_stats(text)
 
     # Build feature dictionary
     features = {
         "basic_counts": {
             "total_words": total_words,
             "total_sentences": total_sentences,
-            "total_paragraphs": len(paragraphs) if paragraphs else 0,
+            "total_paragraphs": para_stats["total_paragraphs"] if para_stats else 0,
             "avg_sentence_length": avg_sentence_length,
             "median_sentence_length": median_sentence_length,
             "stdev_sentence_length": stdev_sentence_length,
@@ -347,7 +415,9 @@ def extract_features(text):
         "pos_distribution": pos_distribution,
         "syntactic_complexity": {
             "avg_verbs_per_sentence": avg_verbs_per_sentence,
-            "passive_voice_ratio": passive_ratio
+            "passive_voice_ratio": passive_ratio,
+            "sentence_type_distribution": sent_type_dist,
+            "clause_complexity": clause_info
         },
         "punctuation": {
             "per_100_words": punct_per_100,
@@ -360,14 +430,14 @@ def extract_features(text):
         },
         "transitions": {
             "frequencies": transition_freq,
-            "sentence_initial_counts": marker_positions
+            "marker_positions": marker_positions
         },
         "hedging": hedging_counts,
         "boosters": booster_counts,
         "contractions_per_100_words": contractions_per_100,
         "pronoun_usage": pron_usage,
         "sentence_starters": starters,
-        "paragraph_stats": paragraph_stats
+        "paragraph_stats": para_stats
     }
     return features
 

@@ -19,12 +19,18 @@ def extract_docx_text(file_path: Path) -> str:
     return "\n\n".join(paragraphs)
 
 def clean_text(text: str) -> str:
-    """Basic cleaning: remove extra whitespace, normalize newlines."""
-    # Remove page numbers, headers/footers (customize as needed)
-    # For now, just collapse whitespace
-    text = re.sub(r'\s+', ' ', text)
-    text = text.strip()
-    return text
+    """Clean text but preserve paragraph breaks (double newlines)."""
+    # Normalize line endings
+    text = text.replace('\r\n', '\n').replace('\r', '\n')
+    # Collapse 3+ newlines into 2 (paragraph break)
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    # Replace single newlines (line wraps) with spaces
+    text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)
+    # Collapse multiple spaces/tabs
+    text = re.sub(r'[ \t]+', ' ', text)
+    # Clean up spaces around paragraph breaks
+    text = re.sub(r' *\n\n *', '\n\n', text)
+    return text.strip()
 
 def process_file(file_path: Path) -> str | None:
     """Process a single file based on extension."""
