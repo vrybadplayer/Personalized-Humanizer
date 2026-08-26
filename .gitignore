@@ -1,0 +1,20 @@
+/.env
+/__extra__
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+# Data (keep raw and clean local, but not in Git if large)
+data/raw/*
+data/clean/*
+data/profiles/*
+data/output/*
+
+# Jupyter
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
