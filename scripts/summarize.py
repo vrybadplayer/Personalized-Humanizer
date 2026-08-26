@@ -169,27 +169,11 @@ def select_examples(num_examples=3):
     return selected
 
 def load_selected_chunks():
-    """Load the selected anti-AI chunks from file."""
-    selected_file = OUTPUT_DIR / "selected_chunks.txt"
-    if not selected_file.exists():
-        print("Warning: selected_chunks.txt not found. Run select_chunks.py first.")
-        return []
-    chunk_paths = []
-    with open(selected_file, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                chunk_paths.append(line)
-    # Read each chunk file
-    chunk_contents = []
-    for path_str in chunk_paths:
-        chunk_file = Path(path_str)
-        if chunk_file.exists():
-            content = chunk_file.read_text(encoding="utf-8")
-            chunk_contents.append(f"### Anti-AI Rules: {chunk_file.stem}\n{content}")
-        else:
-            print(f"Chunk file missing: {path_str}")
-    return "\n\n".join(chunk_contents)
+    condensed_file = OUTPUT_DIR / "condensed_chunks.md"
+    if not condensed_file.exists():
+        print("Warning: condensed_chunks.md not found. Run condense_chunks.py first.")
+        return ""
+    return condensed_file.read_text(encoding="utf-8")
 
 def build_prompt(summary, examples, anti_ai_chunks=""):
     examples_text = "\n".join(f"{i+1}. \"{ex}\"" for i, ex in enumerate(examples))
