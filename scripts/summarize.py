@@ -7,7 +7,7 @@ from collections import Counter
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import spacy
-from config.settings import PROFILE_DIR, CLEAN_DATA_DIR, OUTPUT_DIR
+from config.settings import PROFILE_DIR, CLEAN_DATA_DIR, OUTPUT_DIR, BASE_DIR
 
 # Load spaCy for sentence splitting in example selection
 try:
@@ -168,15 +168,40 @@ def select_examples(num_examples=3):
 
     return selected
 
-def build_prompt(summary, examples):
+def load_selected_chunks():
+    """Load the selected anti-AI chunks from file."""
+    selected_file = OUTPUT_DIR / "selected_chunks.txt"
+    if not selected_file.exists():
+        print("Warning: selected_chunks.txt not found. Run select_chunks.py first.")
+        return []
+    chunk_paths = []
+    with open(selected_file, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                chunk_paths.append(line)
+    # Read each chunk file
+    chunk_contents = []
+    for path_str in chunk_paths:
+        chunk_file = Path(path_str)
+        if chunk_file.exists():
+            content = chunk_file.read_text(encoding="utf-8")
+            chunk_contents.append(f"### Anti-AI Rules: {chunk_file.stem}\n{content}")
+        else:
+            print(f"Chunk file missing: {path_str}")
+    return "\n\n".join(chunk_contents)
+
+def build_prompt(summary, examples, anti_ai_chunks=""):
     examples_text = "\n".join(f"{i+1}. \"{ex}\"" for i, ex in enumerate(examples))
-    prompt = f"""You are an expert in writing style analysis. Based on the following detailed stylometric summary and the provided examples from the writer, create a style guide in Markdown that can be used to instruct another AI to write in this person’s voice.
+    prompt = f"""You are an expert in writing style analysis and anti-AI writing. Based on the following detailed stylometric summary, the provided examples from the writer, and the anti-AI writing rules, create a style guide in Markdown that can be used to instruct another AI to write in this person’s voice while avoiding AI-isms.
 
 Stylometric Summary:
 {summary}
 
 Examples from the writer:
 {examples_text}
+
+{anti_ai_chunks}
 
 The style guide should include sections for:
 - General tone and voice
@@ -185,6 +210,7 @@ The style guide should include sections for:
 - Punctuation and formatting habits
 - Transitional phrases and discourse markers
 - Any other noticeable habits (e.g., hedging, use of pronouns, paragraphing)
+- Anti-AI writing instructions (incorporate the provided rules into actionable guidance)
 
 Important: Do not include domain-specific vocabulary (like technical terms from a particular field) in the style guide. Focus only on structural, syntactic, and stylistic patterns that are independent of the topic. Use the examples to infer patterns beyond the numbers.
 
@@ -205,7 +231,14 @@ def main():
         for i, ex in enumerate(examples):
             print(f"Example {i+1}: {ex[:100]}...")
 
-    prompt = build_prompt(summary, examples)
+    # Load anti-AI chunks (if any)
+    anti_ai_chunks = load_selected_chunks()
+    if anti_ai_chunks:
+        print("\nIncluding selected anti-AI chunks.")
+    else:
+        print("\nNo anti-AI chunks selected.")
+
+    prompt = build_prompt(summary, examples, anti_ai_chunks)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     prompt_file = OUTPUT_DIR / "prompt.txt"
