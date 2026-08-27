@@ -1,5 +1,3 @@
-Below is the updated `README.md`, now reflecting the complete, all‑core pipeline where the LLM narrative is mandatory and the final output includes both narrative and precise stylometric details.
-
 ```markdown
 # Personalized Humanizer
 
@@ -11,56 +9,57 @@ The final guide combines:
 - **Few‑shot examples** extracted from the user's own writing
 - **Full anti‑AI writing rules** (chunked, uncondensed)
 
-## Prerequisites
+## One‑Command Setup & Run (Recommended)
 
-- **Python 3.11 or 3.12** (3.13 is **not** recommended due to missing wheels for some dependencies)
-- **VS Code** with the Python extension (recommended)
-- **Ollama** (required for the LLM narrative step)
+The entire project can be set up and executed with a single script.  
+Make sure you have **Python 3.11 or 3.12** installed and available on your system.  
+Also ensure **Ollama** is installed and running if you want the LLM narrative step (the orchestrator will still work without it, but the final guide will lack the narrative overview).
 
-## Setup
+Place your source documents (e.g., `.docx`, `.pdf`, `.txt`) in the `data/raw/` folder.  
+Place the raw anti‑AI skill markdown as `anti_ai_skill_raw.md` in the project root (optional but recommended for full anti‑AI rules).
 
-### 1. Create and activate a virtual environment (Python 3.11 or 3.12)
-
-Use `py -0p` to list installed Python versions. Create the environment:
-
-```powershell
-py -3.11 -m venv .venv311
-```
-
-If `py -3.11` fails, use the full path from `py -0p`.  
-Activate:
+Then, from the project root, run:
 
 ```powershell
-.\.venv311\Scripts\Activate.ps1
+python setup_orchestrator.py
 ```
 
-### 2. Install required packages
+This single command will:
+1. Find a suitable Python 3.11/3.12 installation.
+2. Create a virtual environment (`.venv311`).
+3. Install all required packages from `requirements.txt`.
+4. Download the spaCy language model.
+5. Download NLTK data.
+6. Chunk the anti‑AI skill (if `anti_ai_skill_raw.md` exists).
+7. Ask if you want to run the full pipeline immediately.
 
-```powershell
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
+If you answer `y` to the last question, the script will automatically execute the complete pipeline (described below) and produce the final output in `data/output/Personalized-Humanizer-Complete.md`.
 
-### 3. Download the spaCy language model
+---
 
-The medium English model is recommended. The usual command may fail, so use one of:
+## Pipeline Overview
 
-- **Option A (worked):**  
-  `python -m spacy download en_core_web_md-3.7.1`
-- **Option B:**  
-  `pip install en-core-web-md`
+The core pipeline consists of seven steps, all executed automatically by the orchestrator:
 
-### 4. Download NLTK data
+| Step | Script | Purpose |
+|------|--------|---------|
+| 1 | `ingest.py` | Convert raw documents into clean text with preserved paragraphs. |
+| 2 | `extract_features.py` | Compute a comprehensive stylometric profile → `style_profile.json`. |
+| 3 | `build_guide_from_template.py` | Fill a deterministic template with the extracted metrics. |
+| 4 | `generate_few_shot_prompt.py` | Select representative passages for few‑shot prompting. |
+| 5 | `summarize.py` | Create a prompt for the LLM using the profile summary and examples. |
+| 6 | `generate_guide.py` | Use Ollama to generate a natural‑language narrative style guide. |
+| 7 | `merge_guides.py` | Combine narrative, metrics, few‑shot examples, and anti‑AI rules into the final file. |
 
-```powershell
-python -c "import nltk; nltk.download('punkt'); nltk.download('averaged_perceptron_tagger')"
-```
+**Final Output:** `data/output/Personalized-Humanizer-Complete.md`
 
-### 5. Verify installation
+This file contains:
+- Narrative overview (LLM)
+- Stylometric metrics (template)
+- Few‑shot examples
+- Full anti‑AI writing rules (chunked)
 
-```powershell
-python -c "import importlib; mods=['docx','pdfplumber','markitdown','bs4','markdown','spacy','nltk','textstat','sklearn','sentence_transformers','pydantic','jinja2','ollama','dotenv']; [print(f'{m}: OK') if importlib.import_module(m) else None for m in mods]; import spacy; spacy.load('en_core_web_md'); print('spaCy model: OK'); import nltk; nltk.download('punkt', quiet=True); nltk.download('averaged_perceptron_tagger', quiet=True); print('NLTK data: OK')"
-```
+---
 
 ## Project Structure
 
@@ -72,15 +71,16 @@ personalized-humanizer/
 │   ├── profiles/           # Stylometric profiles (JSON)
 │   └── output/             # Final guides and validation reports
 ├── scripts/
-│   ├── ingest.py           # Convert raw docs to clean text (preserves paragraphs)
-│   ├── extract_features.py # Extract stylometric features → style_profile.json
+│   ├── ingest.py           # Convert raw docs to clean text
+│   ├── extract_features.py # Extract stylometric features
 │   ├── build_guide_from_template.py  # Fill style_template.md from profile
-│   ├── generate_few_shot_prompt.py   # Create few-shot prompt from clean texts
-│   ├── summarize.py        # Build LLM prompt from profile + examples
-│   ├── generate_guide.py   # Generate narrative style guide via Ollama
-│   ├── merge_guides.py     # Combine all parts → final complete guide
+│   ├── generate_few_shot_prompt.py   # Create few-shot prompt
+│   ├── summarize.py        # Build LLM prompt
+│   ├── generate_guide.py   # Generate narrative guide via Ollama
+│   ├── merge_guides.py     # Combine all parts
+│   ├── run_pipeline.py     # Orchestrator for the 7 pipeline steps
 │   ├── validate.py         # Generate sample and compare metrics
-│   └── chunk_anti_ai_skill.py  # (One-time) Split raw anti-AI skill into chunks
+│   └── chunk_anti_ai_skill.py  # Split raw anti-AI skill into chunks
 ├── config/
 │   ├── settings.py         # Central paths and parameters
 │   ├── style_template.md   # Template with placeholders for metrics
@@ -88,77 +88,34 @@ personalized-humanizer/
 │   ├── anti_ai_chunks/     # Full anti-AI rules split into 10 chunks
 │   └── function_words.txt  # (Optional) list of function words
 ├── anti_ai_skill_raw.md    # Raw anti-AI skill text (source for chunks)
+├── setup_orchestrator.py   # One‑command setup and run script
 ├── requirements.txt
 ├── .gitignore
 └── README.md
 ```
 
-## Pipeline (All Core – No Optional Steps)
-
-Run the following in order:
-
-1. **Place source documents** in `data/raw/` (e.g., `.docx`, `.pdf`, `.txt`).  
-2. **Ingest** – convert to clean text with paragraph breaks.  
-   ```powershell
-   python scripts/ingest.py
-   ```
-3. **Extract features** – compute comprehensive stylometric profile.  
-   ```powershell
-   python scripts/extract_features.py
-   ```
-4. **Build template guide** – fill `style_template.md` with actual metrics.  
-   ```powershell
-   python scripts/build_guide_from_template.py
-   ```
-5. **Generate few‑shot prompt** – select representative passages.  
-   ```powershell
-   python scripts/generate_few_shot_prompt.py
-   ```
-6. **Summarize** – create the LLM prompt from the profile and selected examples.  
-   ```powershell
-   python scripts/summarize.py
-   ```
-7. **Generate narrative guide** – use Ollama to produce a natural‑language description of the style.  
-   ```powershell
-   python scripts/generate_guide.py
-   ```
-8. **Merge** – combine narrative, template metrics, few‑shot examples, and full anti‑AI chunks into `Personalized-Humanizer-Complete.md`.  
-   ```powershell
-   python scripts/merge_guides.py
-   ```
-
-After step 8, the final file `data/output/Personalized-Humanizer-Complete.md` contains:
-
-- **Narrative Overview** (LLM) – flowing interpretation of the style
-- **Stylometric Metrics** (template) – exact numbers for sentence length, POS, punctuation, etc.
-- **Few‑Shot Examples** – direct excerpts from the user
-- **Anti‑AI Writing Rules** – full chunked skill
+---
 
 ## Validation
 
-To test how well the style guide mimics the original writing, run:
+After the pipeline completes, you can test how well the style guide mimics the original writing by running:
 
 ```powershell
 python scripts/validate.py
 ```
 
-This generates a sample paragraph using the guide, extracts features from it, and produces a side‑by‑side report in `data/output/validation_report.txt`. The sample text is saved as `validation_sample.txt`.
+(Ensure the virtual environment is activated: `.\.venv311\Scripts\Activate.ps1`)
 
-## Regenerating Anti‑AI Chunks
+This generates a sample paragraph using the guide, extracts features from it, and produces a report in `data/output/validation_report.txt`. The sample text is saved as `validation_sample.txt`.
 
-If you modify `anti_ai_skill_raw.md` and need to recreate the chunk files:
-
-```powershell
-python scripts/chunk_anti_ai_skill.py
-```
+---
 
 ## Troubleshooting
 
-- **`No module named spacy`** – activate the correct virtual environment and use `python`, not `py`.
-- **`python -m spacy download en_core_web_md` 404** – use the versioned command or `pip install en-core-web-md`.
-- **`py` points to wrong Python** – inside the virtual environment, always use `python`.
-- **Empty validation sample** – increase `num_predict` in `validate.py` or `OLLAMA_CONTEXT_SIZE` in `config/settings.py`. Reason: DeepSeek‑R1 uses internal reasoning tokens.
-- **VS Code package refresh errors** – ignore or restart VS Code.
+- **`No module named spacy`** – The orchestrator installs everything; if you run scripts individually, ensure the virtual environment is activated.
+- **`python -m spacy download en_core_web_md` 404** – The orchestrator uses a versioned command; if it fails, it falls back to `pip install en-core-web-md`.
+- **Empty validation sample** – Increase `num_predict` in `validate.py` or `OLLAMA_CONTEXT_SIZE` in `config/settings.py`.
+- **VS Code package refresh errors** – Ignore or restart VS Code.
 
 ## License
 
