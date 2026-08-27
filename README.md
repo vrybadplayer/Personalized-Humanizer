@@ -1,4 +1,3 @@
-```markdown
 # Personalized Humanizer
 
 Analyze a user's writing style from submitted documents and generate a comprehensive Markdown style guide that can be used to instruct AI models to mimic that style while avoiding AI‑detectable patterns.
