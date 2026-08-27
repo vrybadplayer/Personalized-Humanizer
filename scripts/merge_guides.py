@@ -5,8 +5,9 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from config.settings import OUTPUT_DIR, BASE_DIR
 
-PROSE_GUIDE = OUTPUT_DIR / "Personalized-Humanizer.md"           # from LLM (optional)
+PROSE_GUIDE = OUTPUT_DIR / "Personalized-Humanizer.md"           # LLM narrative
 TEMPLATE_GUIDE = OUTPUT_DIR / "Personalized-Humanizer-Template.md"
+FEW_SHOT_PROMPT = OUTPUT_DIR / "few_shot_prompt.md"
 ANTI_AI_CHUNKS_DIR = BASE_DIR / "config" / "anti_ai_chunks"
 ANTI_AI_STATIC = BASE_DIR / "config" / "anti_ai_static.md"
 FINAL_OUTPUT = OUTPUT_DIR / "Personalized-Humanizer-Complete.md"
@@ -31,6 +32,7 @@ def read_all_chunks():
 def main():
     prose = read_file(PROSE_GUIDE)
     template = read_file(TEMPLATE_GUIDE)
+    few_shot = read_file(FEW_SHOT_PROMPT)
     anti_ai_chunks = read_all_chunks()
     anti_ai_static = read_file(ANTI_AI_STATIC)
 
@@ -43,11 +45,12 @@ def main():
     if prose:
         parts.append("# Narrative Overview\n\n" + prose)
     parts.append(template)
-
+    if few_shot:
+        parts.append("# Few‑Shot Examples\n\n" + few_shot)
     if anti_ai_chunks:
-        parts.append("# Anti-AI Writing Rules (Full)\n\n" + anti_ai_chunks)
+        parts.append("# Anti‑AI Writing Rules (Full)\n\n" + anti_ai_chunks)
     elif anti_ai_static:
-        parts.append("# Anti-AI Writing Rules (Condensed)\n\n" + anti_ai_static)
+        parts.append("# Anti‑AI Writing Rules (Condensed)\n\n" + anti_ai_static)
 
     final_content = "\n\n---\n\n".join(parts)
 
