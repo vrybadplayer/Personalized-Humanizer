@@ -5,12 +5,14 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from config.settings import OUTPUT_DIR, BASE_DIR
 
-PROSE_GUIDE = OUTPUT_DIR / "Personalized-Humanizer.md"           # LLM narrative
+PROSE_GUIDE = OUTPUT_DIR / "Personalized-Humanizer.md"
 TEMPLATE_GUIDE = OUTPUT_DIR / "Personalized-Humanizer-Template.md"
 FEW_SHOT_PROMPT = OUTPUT_DIR / "few_shot_prompt.md"
 ANTI_AI_CHUNKS_DIR = BASE_DIR / "config" / "anti_ai_chunks"
 ANTI_AI_STATIC = BASE_DIR / "config" / "anti_ai_static.md"
-ANTI_AI_CRITICAL = BASE_DIR / "config" / "anti_ai_critical.md"   # new critical quick reference
+ANTI_AI_CRITICAL = BASE_DIR / "config" / "anti_ai_critical.md"
+ANTI_AI_CRITICAL_PROFILE = OUTPUT_DIR / "anti_ai_critical_profile.md"   # profile-specific
+
 FINAL_OUTPUT = OUTPUT_DIR / "Personalized-Humanizer-Complete.md"
 
 def read_file(path: Path) -> str:
@@ -19,7 +21,6 @@ def read_file(path: Path) -> str:
     return ""
 
 def read_all_chunks():
-    """Read and return all anti-AI chunk files in order."""
     if not ANTI_AI_CHUNKS_DIR.exists():
         return ""
     chunk_files = sorted(ANTI_AI_CHUNKS_DIR.glob("C*.md"))
@@ -37,12 +38,12 @@ def main():
     anti_ai_chunks = read_all_chunks()
     anti_ai_static = read_file(ANTI_AI_STATIC)
     anti_ai_critical = read_file(ANTI_AI_CRITICAL)
+    anti_ai_critical_profile = read_file(ANTI_AI_CRITICAL_PROFILE)
 
     if not template:
         print("Template guide missing. Run build_guide_from_template.py first.")
         sys.exit(1)
 
-    # Build final content
     parts = []
     if prose:
         parts.append("# Narrative Overview\n\n" + prose)
@@ -50,19 +51,20 @@ def main():
     if few_shot:
         parts.append("# Few‑Shot Examples\n\n" + few_shot)
 
-    # Anti-AI section: first include critical quick reference if not already in template
-    # Check if template already contains the critical rules heading
-    if "Critical Anti‑AI Writing Rules" not in template and anti_ai_critical:
+    # Anti-AI critical section
+    # Use profile-specific if available, else static critical, else skip (if template already has it)
+    if anti_ai_critical_profile:
+        parts.append("# Anti‑AI Writing Rules (Profile‑Specific Critical)\n\n" + anti_ai_critical_profile)
+    elif "Critical Anti‑AI Writing Rules" not in template and anti_ai_critical:
         parts.append("# Anti‑AI Writing Rules (Quick Reference)\n\n" + anti_ai_critical)
 
-    # Then include full chunks (or static fallback)
+    # Full chunks or static fallback
     if anti_ai_chunks:
         parts.append("# Anti‑AI Writing Rules (Full)\n\n" + anti_ai_chunks)
     elif anti_ai_static:
         parts.append("# Anti‑AI Writing Rules (Condensed)\n\n" + anti_ai_static)
 
     final_content = "\n\n---\n\n".join(parts)
-
     FINAL_OUTPUT.write_text(final_content, encoding="utf-8")
     print(f"Merged guide saved to {FINAL_OUTPUT}")
 
