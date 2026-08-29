@@ -157,7 +157,7 @@ def select_examples(num_examples=3):
 
 def build_prompt(summary, examples):
     examples_text = "\n".join(f"{i+1}. \"{ex}\"" for i, ex in enumerate(examples))
-    prompt = f"""You are an expert in stylometry. Based on the following summary and examples, create a concise style guide for mimicking this writer.
+    prompt = f"""You are an expert in stylometry and anti-AI writing. Based on the following summary and examples, create a concise style guide for mimicking this writer, and also include explicit anti-AI writing instructions.
 
 Summary:
 {summary}
@@ -171,6 +171,7 @@ Output only a Markdown guide with these sections:
 - Vocabulary & Phrasing
 - Punctuation & Formatting
 - Transitions & Discourse Markers
+- Anti-AI Writing Instructions (list key rules to avoid machine detection, such as varying sentence length, avoiding em dashes, not using hollow intensifiers, etc.)
 
 Use bullet points. Be specific and actionable. Do not include domain-specific terms.
 """
