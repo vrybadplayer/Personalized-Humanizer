@@ -6,6 +6,35 @@ This guide was generated from stylometric analysis of the writer's documents. It
 
 <!-- Optional: The LLM-generated prose description will be inserted here by merge_guides.py -->
 
+## Critical Anti‑AI Writing Rules (Always Follow)
+
+- **Vary sentence length**: mix short (3–8 words) and long (20+ words) sentences. Avoid three consecutive sentences of similar length.
+- **Avoid em dashes** (—). Use commas, periods, or parentheses. Maximum one em dash per 1000 words.
+- **Do not bold text for emphasis** in prose; restructure to lead with the key point.
+- **Replace these AI‑favored words**:
+  - "delve" → "explore", "dig into"
+  - "leverage" → "use"
+  - "robust" → "strong"
+  - "seamless" → "smooth"
+  - "utilize" → "use"
+  - "in order to" → "to"
+  - "showcasing" → "showing"
+  - "comprehensive" → "thorough"
+- **Avoid hollow intensifiers**: "genuinely", "truly", "actually" (unless correcting a fact), "very", "highly".
+- **Cut filler**: "It's worth noting that", "In terms of", "The reality is that", "It is important to note".
+- **Do not use "Let's" as a transition**; start with the subject.
+- **Avoid vague attributions** ("Experts believe", "Studies show") – name the source or state the claim directly.
+- **Limit transition words**: "Moreover", "Furthermore", "Additionally" → use "and", "also", or restructure.
+- **Avoid "In conclusion", "To summarize"** – let the conclusion be obvious.
+- **Do not use rhetorical questions as openers**.
+- **Avoid "The catch?", "Here's the thing"** – just state the point.
+- **No invented facts, numbers, or sources**.
+- **Avoid significance inflation** ("watershed moment", "pivotal").
+- **No generic future‑narrative closers** ("may become one of the most important...").
+- **Do not add fake first‑person or manufactured stakes**.
+- **Preserve the writer's passive voice ratio (~24%)** but use active voice when the actor matters.
+- **Use full forms (avoid contractions)** unless the original style uses them.
+
 ## Sentence Structure
 
 - Average sentence length: **{{basic_counts.avg_sentence_length}}** words (median **{{basic_counts.median_sentence_length}}**, std **{{basic_counts.stdev_sentence_length}}**).
@@ -86,6 +115,6 @@ This guide was generated from stylometric analysis of the writer's documents. It
 - Std dev: **{{paragraph_stats.stdev_words}}**
 - Percentiles: 25th = **{{paragraph_stats.percentiles[0]}}**, 50th = **{{paragraph_stats.percentiles[1]}}**, 75th = **{{paragraph_stats.percentiles[2]}}**
 
-## Anti-AI Writing Rules
+## Anti-AI Writing Rules (Full)
 
-<!-- The static anti-AI block will be appended here by merge_guides.py -->
+<!-- The full anti-AI chunk content will be appended here by merge_guides.py -->
