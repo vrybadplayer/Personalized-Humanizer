@@ -7,7 +7,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 sys.path.append(str(Path(__file__).resolve().parent))
 
 import ollama
-from config.settings import PROFILE_DIR, OUTPUT_DIR, OLLAMA_MODEL, OLLAMA_CONTEXT_SIZE
+from config.settings import PROFILE_DIR, OUTPUT_DIR, VALIDATION_MODEL, OLLAMA_CONTEXT_SIZE
 from extract_features import extract_features
 
 # Metrics to compare (keys in the feature dict)
@@ -47,7 +47,7 @@ def load_style_guide():
     for f in [combined, simple]:
         if f.exists():
             return f.read_text(encoding="utf-8")
-    print("No style guide found. Run generate_guide.py (and append_anti_ai.py) first.")
+    print("No style guide found. Run generate_guide.py (and merge_guides.py) first.")
     sys.exit(1)
 
 def generate_sample(style_guide, topic):
@@ -60,7 +60,7 @@ Style guide:
 """
 
     response = ollama.generate(
-        model=OLLAMA_MODEL,
+        model=VALIDATION_MODEL,
         prompt=prompt,
         options={
             "temperature": 0.5,

@@ -10,6 +10,7 @@ sys.path.append(str(PROJECT_ROOT))
 PIPELINE_STEPS = [
     "scripts/ingest.py",
     "scripts/extract_features.py",
+    "scripts/generate_profile_specific_anti_ai.py",
     "scripts/build_guide_from_template.py",
     "scripts/generate_few_shot_prompt.py",
     "scripts/summarize.py",

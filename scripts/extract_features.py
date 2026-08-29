@@ -158,7 +158,7 @@ def punctuation_per_sentence(doc, text):
     total_sentences = len(sentences)
     punct_counts = Counter()
     for char in text:
-        if char in ".,;:!?":
+        if char in ".,;:!?—–":
             punct_counts[char] += 1
     return {char: count / total_sentences for char, count in punct_counts.items()}
 

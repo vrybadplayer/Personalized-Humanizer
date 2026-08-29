@@ -13,4 +13,5 @@ SPACY_MODEL = "en_core_web_md"
 
 # LLM settings (Ollama)
 OLLAMA_MODEL = "deepseek-r1:8b"
+VALIDATION_MODEL = "llama3.2:3b"
 OLLAMA_API_URL = "http://localhost:11434"

@@ -42,7 +42,7 @@ This guide was generated from stylometric analysis of the writer's documents. It
 - Sentence type distribution: simple **{{syntactic_complexity.sentence_type_distribution.simple}}**, compound **{{syntactic_complexity.sentence_type_distribution.compound}}**, complex **{{syntactic_complexity.sentence_type_distribution.complex}}**, compound-complex **{{syntactic_complexity.sentence_type_distribution.compound-complex}}**.
 - Average clauses per sentence: **{{syntactic_complexity.clause_complexity.avg_clauses_per_sentence}}**.
 - Subordinate clause ratio: **{{syntactic_complexity.clause_complexity.subordinate_clause_ratio}}**.
-- Passive voice ratio: **{{syntactic_complexity.passive_voice_ratio}}** (i.e., about **{{syntactic_complexity.passive_voice_ratio_percent}}**% of sentences).
+- Passive voice ratio: **{{syntactic_complexity.passive_voice_ratio}}** (proportion of sentences).
 
 ## Vocabulary & Phrasing
 

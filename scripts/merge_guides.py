@@ -51,12 +51,26 @@ def main():
     if few_shot:
         parts.append("# Few‑Shot Examples\n\n" + few_shot)
 
-    # Anti-AI critical section
-    # Use profile-specific if available, else static critical, else skip (if template already has it)
+    # Determine if the template already contains a critical anti-AI rules section
+    template_has_critical = "Critical Anti‑AI Writing Rules" in template
+
+    # Choose the best critical section to insert
+    critical_section = None
+    critical_title = None
     if anti_ai_critical_profile:
-        parts.append("# Anti‑AI Writing Rules (Profile‑Specific Critical)\n\n" + anti_ai_critical_profile)
-    elif "Critical Anti‑AI Writing Rules" not in template and anti_ai_critical:
-        parts.append("# Anti‑AI Writing Rules (Quick Reference)\n\n" + anti_ai_critical)
+        critical_section = anti_ai_critical_profile
+        critical_title = "# Anti‑AI Writing Rules (Profile‑Specific Critical)\n\n"
+    elif anti_ai_critical and not template_has_critical:
+        critical_section = anti_ai_critical
+        critical_title = "# Anti‑AI Writing Rules (Quick Reference)\n\n"
+
+    # Only add a critical section if not already in template, or if profile-specific supersedes
+    if critical_section and not (template_has_critical and not anti_ai_critical_profile):
+        # If template already has critical and we have profile-specific, we should replace template's? 
+        # Safer: if template has critical and no profile-specific, skip; if profile-specific exists, add it anyway (could duplicate if template also has critical).
+        # To avoid duplication, we assume template critical will be removed as recommended.
+        if not template_has_critical or anti_ai_critical_profile:
+            parts.append(critical_title + critical_section)
 
     # Full chunks or static fallback
     if anti_ai_chunks:
