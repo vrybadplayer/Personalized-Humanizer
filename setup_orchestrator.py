@@ -90,11 +90,13 @@ def download_spacy_model(venv_python):
 
 def download_nltk_data(venv_python):
     print("\nDownloading NLTK data...")
-    packages = "', '".join(NLTK_DOWNLOADS)
+    # Build a Python list literal for the packages
+    packages_list = "['" + "', '".join(NLTK_DOWNLOADS) + "']"
     cmd = [
         str(venv_python), "-c",
-        f"import nltk, pathlib, sys; pathlib.Path(sys.prefix + '/nltk_data').mkdir(parents=True, exist_ok=True); "
-        f"nltk.download('{packages}', download_dir=sys.prefix + '/nltk_data')"
+        f"import nltk, pathlib, sys; "
+        f"pathlib.Path(sys.prefix + '/nltk_data').mkdir(parents=True, exist_ok=True); "
+        f"nltk.download({packages_list}, download_dir=sys.prefix + '/nltk_data')"
     ]
     return run_command(cmd)
 
