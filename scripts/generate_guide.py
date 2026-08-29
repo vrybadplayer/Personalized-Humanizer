@@ -4,7 +4,14 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import ollama
-from config.settings import OUTPUT_DIR, OLLAMA_MODEL, OLLAMA_CONTEXT_SIZE
+from config.settings import (
+    OUTPUT_DIR,
+    OLLAMA_MODEL,
+    OLLAMA_CONTEXT_SIZE,
+    GENERATION_TEMPERATURE,
+    GENERATION_NUM_PREDICT,
+    GENERATION_TOP_P,
+)
 
 def main():
     prompt_file = OUTPUT_DIR / "prompt.txt"
@@ -19,9 +26,9 @@ def main():
         model=OLLAMA_MODEL,
         messages=[{"role": "user", "content": prompt}],
         options={
-            "temperature": 0.4,
-            "num_predict": 1200,
-            "top_p": 0.9,
+            "temperature": GENERATION_TEMPERATURE,
+            "num_predict": GENERATION_NUM_PREDICT,
+            "top_p": GENERATION_TOP_P,
             "num_ctx": OLLAMA_CONTEXT_SIZE,
         },
     )

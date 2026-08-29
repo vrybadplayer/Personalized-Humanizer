@@ -2,17 +2,19 @@
 """
 Chunk the raw anti-AI writing skill markdown into 10 thematic chunks.
 Usage: python scripts/chunk_anti_ai_skill.py [input_file] [output_dir]
-Defaults:
-    input_file: anti_ai_skill_raw.md (in project root)
-    output_dir: config/anti_ai_chunks
+Defaults are read from config/settings.py:
+    CHUNK_INPUT_FILE (default: anti_ai_skill_raw.md)
+    CHUNK_OUTPUT_DIR (default: config/anti_ai_chunks)
 """
 
 import sys
 import re
 from pathlib import Path
 
-# Add project root to sys.path for settings if needed (not necessary for this script)
-# sys.path.append(str(Path(__file__).resolve().parent.parent))
+# Add project root to sys.path for settings
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+from config.settings import CHUNK_INPUT_FILE, CHUNK_OUTPUT_DIR
 
 # Mapping from heading text (lowercased, stripped) to chunk ID.
 # We include both top-level (##) and subsection (###) headings.
@@ -47,7 +49,7 @@ CHUNK_MAP = {
     "synonym cycling": "C02",
     "vague attributions": "C02",
     "filler phrases": "C02",
-    "generic conclusions": "C03",   # could be C03 or C05; we'll put C03
+    "generic conclusions": "C03",
     "chatbot artifacts": "C06",
     "\"let's\" constructions": "C02",
     "notability name-dropping": "C06",
@@ -111,7 +113,6 @@ CHUNK_FILES = {
 
 def normalize_heading(text):
     """Normalize heading text for mapping."""
-    # Remove leading/trailing whitespace and lowercase
     return text.strip().lower()
 
 def split_markdown_by_headings(content):
@@ -147,12 +148,10 @@ def split_markdown_by_headings(content):
 def assign_chunk(level, heading):
     """Return chunk ID for a heading, or None if not mapped."""
     norm = normalize_heading(heading)
-    # Check direct mapping
     if norm in CHUNK_MAP:
         return CHUNK_MAP[norm]
-    # Fallback: some headings may have different phrasing; try to match with basic pattern
-    # We'll do simple keyword matching for robustness
-    # Example: heading containing "formatting" -> C01, etc.
+
+    # Fallback keyword matching
     if 'format' in norm or 'typography' in norm or 'dash' in norm or 'bold' in norm or 'emoji' in norm or 'curly' in norm:
         return "C01"
     if 'sentence' in norm or 'rhythm' in norm or 'uniformity' in norm or 'fragment' in norm or 'passive' in norm or 'synonym' in norm or 'filler' in norm or 'let' in norm:
@@ -173,11 +172,16 @@ def assign_chunk(level, heading):
         return "C09"
     if 'self-reference' in norm or 'context profile' in norm or 'house style' in norm or 'output format' in norm or 'mechanical' in norm:
         return "C10"
-    # Default if no match: put in C10 (meta) or skip with warning
+
     print(f"Warning: unmapped heading '{heading}' -> defaulting to C10")
     return "C10"
 
-def main(input_file='anti_ai_skill_raw.md', output_dir='config/anti_ai_chunks'):
+def main(input_file=None, output_dir=None):
+    if input_file is None:
+        input_file = CHUNK_INPUT_FILE
+    if output_dir is None:
+        output_dir = CHUNK_OUTPUT_DIR
+
     input_path = Path(input_file)
     if not input_path.exists():
         print(f"Error: Input file {input_path} not found.")
@@ -189,17 +193,13 @@ def main(input_file='anti_ai_skill_raw.md', output_dir='config/anti_ai_chunks'):
     content = input_path.read_text(encoding='utf-8')
     sections = split_markdown_by_headings(content)
 
-    # Initialize chunk content buffers
     chunk_buffers = {chunk_id: [] for chunk_id in CHUNK_FILES.keys()}
 
-    # Process each section
     for level, heading, body in sections:
         chunk_id = assign_chunk(level, heading)
-        # Add heading and body to buffer
         heading_prefix = '#' * level + ' '
         chunk_buffers[chunk_id].append(f"{heading_prefix}{heading}\n{body}")
 
-    # Write chunk files
     for chunk_id, buffer in chunk_buffers.items():
         if not buffer:
             print(f"Chunk {chunk_id} has no content; skipping file.")
@@ -214,12 +214,6 @@ def main(input_file='anti_ai_skill_raw.md', output_dir='config/anti_ai_chunks'):
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    if len(args) >= 1:
-        input_file = args[0]
-    else:
-        input_file = 'anti_ai_skill_raw.md'
-    if len(args) >= 2:
-        output_dir = args[1]
-    else:
-        output_dir = 'config/anti_ai_chunks'
+    input_file = args[0] if len(args) >= 1 else CHUNK_INPUT_FILE
+    output_dir = args[1] if len(args) >= 2 else CHUNK_OUTPUT_DIR
     main(input_file, output_dir)

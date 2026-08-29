@@ -1,13 +1,22 @@
 import subprocess
 import sys
 import shutil
-import venv
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent
-VENV_DIR = PROJECT_ROOT / ".venv311"          # consistent with README
-REQUIREMENTS_FILE = PROJECT_ROOT / "requirements.txt"
-RAW_ANTI_AI_FILE = PROJECT_ROOT / "anti_ai_skill_raw.md"
+# Add project root to sys.path to import settings
+sys.path.append(str(Path(__file__).resolve().parent))
+
+from config.settings import (
+    VENV_DIR,
+    REQUIREMENTS_FILE,
+    RAW_ANTI_AI_FILE,
+    SUPPORTED_PYTHON_MINORS,
+    SPACY_MODEL_DOWNLOAD,
+    SPACY_MODEL_PIP,
+    NLTK_DOWNLOADS,
+    CHUNK_ANTI_AI_SCRIPT,
+    PIPELINE_SCRIPT,
+)
 
 def run_command(cmd, cwd=None, env=None):
     """Run a command and return True if success."""
@@ -19,7 +28,6 @@ def get_python_version(python_exe):
     """Return (major, minor) or None."""
     try:
         out = subprocess.check_output([python_exe, "--version"], text=True, stderr=subprocess.STDOUT)
-        # e.g., "Python 3.11.7"
         parts = out.strip().split()
         if len(parts) >= 2:
             ver = parts[1].split(".")
@@ -28,18 +36,18 @@ def get_python_version(python_exe):
         return None
     return None
 
-def find_python_311_or_312():
+def find_supported_python():
     """Try to find a Python 3.11 or 3.12 executable."""
-    # First check if current Python is suitable
+    # First check current Python
     cur = sys.executable
     ver = get_python_version(cur)
-    if ver and ver[0] == 3 and ver[1] in (11, 12):
+    if ver and ver[0] == 3 and ver[1] in SUPPORTED_PYTHON_MINORS:
         return cur
 
     # Try py launcher
     py_exe = shutil.which("py")
     if py_exe:
-        for minor in (11, 12):
+        for minor in SUPPORTED_PYTHON_MINORS:
             try:
                 out = subprocess.check_output([py_exe, f"-3.{minor}", "--version"], text=True, stderr=subprocess.STDOUT)
                 if f"3.{minor}" in out:
@@ -72,17 +80,19 @@ def install_requirements(venv_python):
 
 def download_spacy_model(venv_python):
     print("\nDownloading spaCy model...")
-    # Try versioned command first (worked previously)
-    success = run_command([str(venv_python), "-m", "spacy", "download", "en_core_web_md-3.7.1"])
+    # Try versioned command first
+    success = run_command([str(venv_python), "-m", "spacy", "download", SPACY_MODEL_DOWNLOAD])
     if success:
         return True
     # Fallback to pip package
-    success = run_command([str(venv_python), "-m", "pip", "install", "en-core-web-md"])
+    success = run_command([str(venv_python), "-m", "pip", "install", SPACY_MODEL_PIP])
     return success
 
 def download_nltk_data(venv_python):
     print("\nDownloading NLTK data...")
-    cmd = [str(venv_python), "-c", "import nltk; nltk.download('punkt'); nltk.download('averaged_perceptron_tagger')"]
+    # Build the Python command to download all required packages
+    packages = "', '".join(NLTK_DOWNLOADS)
+    cmd = [str(venv_python), "-c", f"import nltk; nltk.download('{packages}')"]
     return run_command(cmd)
 
 def chunk_anti_ai_skill(venv_python):
@@ -91,18 +101,18 @@ def chunk_anti_ai_skill(venv_python):
         print("Please place the raw anti-AI skill markdown in the project root and run the chunk script manually if needed.")
         return True  # not fatal
     print("\nChunking anti-AI skill...")
-    cmd = [str(venv_python), "scripts/chunk_anti_ai_skill.py"]
+    cmd = [str(venv_python), str(CHUNK_ANTI_AI_SCRIPT)]
     return run_command(cmd)
 
 def run_pipeline(venv_python):
     print("\nRunning full pipeline...")
-    cmd = [str(venv_python), "scripts/run_pipeline.py"]
+    cmd = [str(venv_python), str(PIPELINE_SCRIPT)]
     return run_command(cmd)
 
 def main():
     print("=== Personalized Humanizer Setup ===")
     # 1. Find suitable Python
-    python_info = find_python_311_or_312()
+    python_info = find_supported_python()
     if python_info is None:
         print("ERROR: Python 3.11 or 3.12 not found. Install one and try again.")
         sys.exit(1)

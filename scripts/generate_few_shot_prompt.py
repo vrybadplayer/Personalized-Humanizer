@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import spacy
-from config.settings import CLEAN_DATA_DIR, OUTPUT_DIR, PROFILE_DIR
+from config.settings import CLEAN_DATA_DIR, OUTPUT_DIR, PROFILE_DIR, FEW_SHOT_EXAMPLE_COUNT
 
 try:
     nlp = spacy.load("en_core_web_md")
@@ -20,7 +20,7 @@ def load_profile():
     with open(profile_file, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def select_passages(num_passages=8):
+def select_passages(num_passages):
     """Select varied, non-citation, low-domain passages from clean texts."""
     clean_files = list(CLEAN_DATA_DIR.glob("*.txt"))
     if not clean_files or nlp is None:
@@ -73,7 +73,6 @@ def select_passages(num_passages=8):
     }
 
     selected = []
-    # Cycle through bins until we reach num_passages
     bin_names = ["medium", "short", "long"]
     idx = 0
     while len(selected) < num_passages and any(bins.values()):
@@ -82,11 +81,9 @@ def select_passages(num_passages=8):
             chosen = bins[bin_name].pop(0)
             selected.append(chosen["chunk"])
         idx += 1
-        # Break if no more candidates
         if all(not bins[b] for b in bins):
             break
 
-    # If still not enough, fill from remaining candidates
     if len(selected) < num_passages:
         for c in candidates:
             if len(selected) >= num_passages:
@@ -110,7 +107,7 @@ Now, write a response on the given topic using this exact style. Do not include 
     return header + examples_text + footer
 
 def main():
-    passages = select_passages(8)
+    passages = select_passages(FEW_SHOT_EXAMPLE_COUNT)
     if not passages:
         print("No suitable passages found. Ensure clean data exists.")
         sys.exit(1)

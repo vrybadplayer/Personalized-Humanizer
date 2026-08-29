@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import spacy
-from config.settings import PROFILE_DIR, CLEAN_DATA_DIR, OUTPUT_DIR
+from config.settings import PROFILE_DIR, CLEAN_DATA_DIR, OUTPUT_DIR, SUMMARIZE_EXAMPLE_COUNT
 
 try:
     nlp = spacy.load("en_core_web_md")
@@ -63,7 +63,7 @@ def create_summary(profile):
 
     return "\n".join(lines)
 
-def select_examples(num_examples=3):
+def select_examples(num_examples=SUMMARIZE_EXAMPLE_COUNT):
     """Select varied, non-citation-heavy, low-domain examples from clean texts."""
     clean_files = list(CLEAN_DATA_DIR.glob("*.txt"))
     if not clean_files or nlp is None:
@@ -89,21 +89,17 @@ def select_examples(num_examples=3):
 
         # Generate candidate passages of 3-5 sentences, non-overlapping
         for i in range(0, total_sentences - 2, 3):
-            # Use up to 5 sentences, but stop at end
             chunk_sentences = sentences[i:i+5]
             chunk = " ".join(chunk_sentences)
             word_count = len(chunk.split())
             if word_count < 30 or word_count > 200:
                 continue
 
-            # Reject if citation-heavy
             if citation_re.search(chunk):
                 continue
 
-            # Domain score: count occurrences of top content words
             domain_score = sum(chunk.lower().count(w.lower()) for w in top_content)
 
-            # Average sentence length (in words) of the passage
             sent_lengths = [len(s.split()) for s in chunk_sentences if s.strip()]
             avg_len = sum(sent_lengths) / len(sent_lengths) if sent_lengths else 0
 
@@ -112,40 +108,30 @@ def select_examples(num_examples=3):
                 "domain_score": domain_score,
                 "avg_sentence_len": avg_len,
                 "word_count": word_count,
-                "file_index": len(candidates)  # just for uniqueness
+                "file_index": len(candidates)
             })
 
     if not candidates:
         return []
 
-    # Sort by domain score ascending (prefer low domain)
     candidates.sort(key=lambda x: x["domain_score"])
 
-    # Select examples ensuring variety in average sentence length
     selected = []
-    # Categorize into short, medium, long based on avg sentence length
-    # Short: < 12, Medium: 12-20, Long: >20
     bins = {
         "short": [c for c in candidates if c["avg_sentence_len"] < 12],
         "medium": [c for c in candidates if 12 <= c["avg_sentence_len"] <= 20],
         "long": [c for c in candidates if c["avg_sentence_len"] > 20],
     }
 
-    # Try to pick one from each bin, in order of bin preference
-    bin_order = ["medium", "short", "long"]  # medium most common, short/long for variety
+    bin_order = ["medium", "short", "long"]
     for bin_name in bin_order:
         if len(selected) >= num_examples:
             break
         if bins[bin_name]:
-            # Pick the candidate with lowest domain score from that bin
-            chosen = bins[bin_name][0]  # already sorted by domain_score
+            chosen = bins[bin_name][0]
             selected.append(chosen["chunk"])
-            # Remove from candidates to avoid duplicates
             candidates = [c for c in candidates if c["chunk"] != chosen["chunk"]]
-            # Recompute bins? Not necessary if we just pick the first of each bin.
-            # But to be safe, we could re-bin remaining, but for simplicity we'll keep.
 
-    # If still need more, fill with best remaining
     if len(selected) < num_examples:
         for c in candidates:
             if len(selected) >= num_examples:
@@ -180,7 +166,7 @@ Use bullet points. Be specific and actionable. Do not include domain-specific te
 def main():
     profile = load_profile()
     summary = create_summary(profile)
-    examples = select_examples(5)
+    examples = select_examples(SUMMARIZE_EXAMPLE_COUNT)
 
     prompt = build_prompt(summary, examples)
 
