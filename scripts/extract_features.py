@@ -11,10 +11,13 @@ import spacy
 import nltk
 from nltk.util import ngrams
 import textstat
-from config.settings import CLEAN_DATA_DIR, PROFILE_DIR
+from config.settings import CLEAN_DATA_DIR, PROFILE_DIR, NLTK_DATA_DIR
 
-nltk.download('punkt', quiet=True)
-nltk.download('averaged_perceptron_tagger', quiet=True)
+# Ensure NLTK data directory exists inside the virtual environment
+NLTK_DATA_DIR.mkdir(parents=True, exist_ok=True)
+nltk.data.path.append(str(NLTK_DATA_DIR))
+nltk.download('punkt', download_dir=str(NLTK_DATA_DIR), quiet=True)
+nltk.download('averaged_perceptron_tagger', download_dir=str(NLTK_DATA_DIR), quiet=True)
 
 try:
     nlp = spacy.load("en_core_web_md")
@@ -168,9 +171,7 @@ def classify_sentence_type(sent):
         1 for tok in sent
         if tok.pos_ in ("VERB", "AUX") and tok.morph.get("VerbForm") == ["Fin"]
     )
-    # Count coordinating conjunctions that join independent clauses (simplified)
     coordinators = sum(1 for tok in sent if tok.dep_ == "cc")
-    # Count subordinating conjunctions or relative pronouns
     subordinators = sum(
         1 for tok in sent
         if tok.dep_ == "mark" or (tok.dep_ == "relcl" and tok.pos_ == "PRON")
@@ -185,7 +186,6 @@ def classify_sentence_type(sent):
     elif subordinators > 0:
         return "complex"
     else:
-        # More than one finite verb but no clear marker; treat as complex
         return "complex"
 
 def sentence_type_distribution(doc):
@@ -207,14 +207,12 @@ def clause_complexity(doc):
 
     for sent in doc.sents:
         total_sentences += 1
-        # Count finite verbs as approximation of clauses
         finite_verbs = sum(
             1 for tok in sent
             if tok.pos_ in ("VERB", "AUX") and tok.morph.get("VerbForm") == ["Fin"]
         )
         total_clauses += finite_verbs
 
-        # Count subordinating conjunctions and relative pronouns introducing subordinate clauses
         subord = sum(
             1 for tok in sent
             if tok.dep_ == "mark" or (tok.dep_ == "relcl" and tok.pos_ == "PRON")
@@ -229,7 +227,7 @@ def clause_complexity(doc):
 
     return {
         "avg_clauses_per_sentence": avg_clauses,
-        "subordinate_clause_ratio": subord_ratio,          # now between 0 and 1
+        "subordinate_clause_ratio": subord_ratio,
         "sentences_with_subordinate_ratio": subord_sentence_ratio
     }
 
@@ -238,7 +236,7 @@ def paragraph_stats(text):
     if len(paragraphs) < 2:
         return None
     lengths = [len(p.split()) for p in paragraphs]
-    if len(lengths) < 4:  # need at least 4 for percentiles
+    if len(lengths) < 4:
         percentiles = [0, 0, 0]
     else:
         percentiles = statistics.quantiles(lengths, n=4)
@@ -334,16 +332,13 @@ def extract_features(text):
     avg_verbs_per_sentence = statistics.mean(verbs_per_sentence) if verbs_per_sentence else 0
     passive_ratio = detect_passive_voice(doc)
 
-    # New: sentence type distribution
     sent_type_dist = sentence_type_distribution(doc)
-
-    # New: clause complexity
     clause_info = clause_complexity(doc)
 
-    # Punctuation (per 100 words and per sentence)
+    # Punctuation (per 100 words and per sentence) - now includes em dash and en dash
     punct_counts = Counter()
     for char in text:
-        if char in ".,;:!?":
+        if char in ".,;:!?—–":
             punct_counts[char] += 1
     punct_per_100 = {p: (count / total_words * 100) if total_words else 0 for p, count in punct_counts.items()}
     punct_per_sentence = punctuation_per_sentence(doc, text)
@@ -359,7 +354,6 @@ def extract_features(text):
         count = text.lower().count(tw)
         if count > 0:
             transition_freq[tw] = count / total_words
-    # New: discourse marker positions (total, initial, percentage)
     marker_positions = discourse_marker_positions(doc)
 
     # Hedging and boosters
@@ -384,7 +378,7 @@ def extract_features(text):
     # Sentence starters
     starters = sentence_starters(doc, top_n=10)
 
-    # New: paragraph stats with percentiles
+    # Paragraph stats
     para_stats = paragraph_stats(text)
 
     # Build feature dictionary

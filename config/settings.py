@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,6 +20,9 @@ SUPPORTED_PYTHON_MINORS = [11, 12]
 SPACY_MODEL = "en_core_web_md"
 SPACY_MODEL_DOWNLOAD = "en_core_web_md-3.7.1"   # versioned download command
 SPACY_MODEL_PIP = "en-core-web-md"              # fallback pip package
+
+# NLTK data directory inside the virtual environment
+NLTK_DATA_DIR = Path(sys.prefix) / "nltk_data"
 
 # NLTK data packages to download
 NLTK_DOWNLOADS = ["punkt", "averaged_perceptron_tagger"]

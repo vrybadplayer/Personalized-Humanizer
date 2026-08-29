@@ -90,9 +90,12 @@ def download_spacy_model(venv_python):
 
 def download_nltk_data(venv_python):
     print("\nDownloading NLTK data...")
-    # Build the Python command to download all required packages
     packages = "', '".join(NLTK_DOWNLOADS)
-    cmd = [str(venv_python), "-c", f"import nltk; nltk.download('{packages}')"]
+    cmd = [
+        str(venv_python), "-c",
+        f"import nltk, pathlib, sys; pathlib.Path(sys.prefix + '/nltk_data').mkdir(parents=True, exist_ok=True); "
+        f"nltk.download('{packages}', download_dir=sys.prefix + '/nltk_data')"
+    ]
     return run_command(cmd)
 
 def chunk_anti_ai_skill(venv_python):
