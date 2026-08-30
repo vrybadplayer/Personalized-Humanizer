@@ -11,7 +11,8 @@ FEW_SHOT_PROMPT = OUTPUT_DIR / "few_shot_prompt.md"
 ANTI_AI_CHUNKS_DIR = BASE_DIR / "config" / "anti_ai_chunks"
 ANTI_AI_STATIC = BASE_DIR / "config" / "anti_ai_static.md"
 ANTI_AI_CRITICAL = BASE_DIR / "config" / "anti_ai_critical.md"
-ANTI_AI_CRITICAL_PROFILE = OUTPUT_DIR / "anti_ai_critical_profile.md"   # profile-specific
+ANTI_AI_CRITICAL_PROFILE = OUTPUT_DIR / "anti_ai_critical_profile.md"
+USAGE_TEMPLATE_FILE = BASE_DIR / "config" / "usage_prompt_template.md"
 
 FINAL_OUTPUT = OUTPUT_DIR / "Personalized-Humanizer-Complete.md"
 
@@ -39,6 +40,7 @@ def main():
     anti_ai_static = read_file(ANTI_AI_STATIC)
     anti_ai_critical = read_file(ANTI_AI_CRITICAL)
     anti_ai_critical_profile = read_file(ANTI_AI_CRITICAL_PROFILE)
+    usage_template = read_file(USAGE_TEMPLATE_FILE)
 
     if not template:
         print("Template guide missing. Run build_guide_from_template.py first.")
@@ -51,32 +53,21 @@ def main():
     if few_shot:
         parts.append("# Few‑Shot Examples\n\n" + few_shot)
 
-    # Determine if the template already contains a critical anti-AI rules section
-    template_has_critical = "Critical Anti‑AI Writing Rules" in template
-
-    # Choose the best critical section to insert
-    critical_section = None
-    critical_title = None
+    # Critical anti-AI rules (profile-specific takes precedence)
     if anti_ai_critical_profile:
-        critical_section = anti_ai_critical_profile
-        critical_title = "# Anti‑AI Writing Rules (Profile‑Specific Critical)\n\n"
-    elif anti_ai_critical and not template_has_critical:
-        critical_section = anti_ai_critical
-        critical_title = "# Anti‑AI Writing Rules (Quick Reference)\n\n"
-
-    # Only add a critical section if not already in template, or if profile-specific supersedes
-    if critical_section and not (template_has_critical and not anti_ai_critical_profile):
-        # If template already has critical and we have profile-specific, we should replace template's? 
-        # Safer: if template has critical and no profile-specific, skip; if profile-specific exists, add it anyway (could duplicate if template also has critical).
-        # To avoid duplication, we assume template critical will be removed as recommended.
-        if not template_has_critical or anti_ai_critical_profile:
-            parts.append(critical_title + critical_section)
+        parts.append("# Anti‑AI Writing Rules (Profile‑Specific Critical)\n\n" + anti_ai_critical_profile)
+    elif anti_ai_critical:
+        parts.append("# Anti‑AI Writing Rules (Quick Reference)\n\n" + anti_ai_critical)
 
     # Full chunks or static fallback
     if anti_ai_chunks:
         parts.append("# Anti‑AI Writing Rules (Full)\n\n" + anti_ai_chunks)
     elif anti_ai_static:
         parts.append("# Anti‑AI Writing Rules (Condensed)\n\n" + anti_ai_static)
+
+    # Usage prompt template
+    if usage_template:
+        parts.append(usage_template)
 
     final_content = "\n\n---\n\n".join(parts)
     FINAL_OUTPUT.write_text(final_content, encoding="utf-8")
