@@ -1,3 +1,5 @@
+**Important:** The metrics below are guidelines, not strict rules. To sound human, vary sentence structure, punctuation, and paragraph length within a ±5–10% range of these values.
+
 # Personalized Humanizer – Style Guide (Template)
 
 This guide was generated from stylometric analysis of the writer's documents. It contains precise metrics and instructions for mimicking the writer's style.
@@ -37,12 +39,11 @@ This guide was generated from stylometric analysis of the writer's documents. It
 
 ## Sentence Structure
 
-- Average sentence length: **{{basic_counts.avg_sentence_length}}** words (median **{{basic_counts.median_sentence_length}}**, std **{{basic_counts.stdev_sentence_length}}**).
-- Sentence length percentiles: 25th = **{{basic_counts.sentence_length_percentiles[0]}}**, 50th = **{{basic_counts.sentence_length_percentiles[1]}}**, 75th = **{{basic_counts.sentence_length_percentiles[2]}}**.
-- Sentence type distribution: simple **{{syntactic_complexity.sentence_type_distribution.simple}}**, compound **{{syntactic_complexity.sentence_type_distribution.compound}}**, complex **{{syntactic_complexity.sentence_type_distribution.complex}}**, compound-complex **{{syntactic_complexity.sentence_type_distribution.compound-complex}}**.
+- Sentence length: aim for an average around **{{basic_counts.avg_sentence_length}}** words, but vary widely between **{{basic_counts.sentence_length_percentiles[0]}}** and **{{basic_counts.sentence_length_percentiles[2]}}**. Include some very short (3–5 words) and some long (25–40 words) sentences.
+- Sentence type distribution: the writer uses a mix of simple, compound, complex, and compound-complex sentences. Do not stick to one type; vary them naturally.
 - Average clauses per sentence: **{{syntactic_complexity.clause_complexity.avg_clauses_per_sentence}}**.
 - Subordinate clause ratio: **{{syntactic_complexity.clause_complexity.subordinate_clause_ratio}}**.
-- Passive voice ratio: **{{syntactic_complexity.passive_voice_ratio}}** (proportion of sentences).
+- Passive voice: the writer uses passive voice in about **{{syntactic_complexity.passive_voice_ratio}}** of sentences. Treat this as a soft target, not a strict rule; vary between roughly 15–35% to avoid monotony.
 
 ## Vocabulary & Phrasing
 
