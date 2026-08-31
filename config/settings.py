@@ -38,15 +38,15 @@ OLLAMA_API_URL = "http://localhost:11434"
 OLLAMA_CONTEXT_SIZE = 8192      # 12288    18000
 
 # Generation parameters for narrative style guide (used in generate_guide.py)
-GENERATION_TEMPERATURE = 0.9     # Can be tweaked to be more creative
+GENERATION_TEMPERATURE = 0.5     # Can be tweaked to be more creative
 GENERATION_NUM_PREDICT = 1200
-GENERATION_TOP_P = 0.9
+GENERATION_TOP_P = 0.5
 
 # Few-shot prompt settings for Final result
-FEW_SHOT_EXAMPLE_COUNT = 300
+FEW_SHOT_EXAMPLE_COUNT = 100
 
 # Number of examples used in summarize.py to feed LLM prompt
-SUMMARIZE_EXAMPLE_COUNT = 5
+SUMMARIZE_EXAMPLE_COUNT = 8
 
 # Validation settings
 VALIDATION_TOPIC = "the importance of time management in daily life"

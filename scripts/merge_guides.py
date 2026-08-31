@@ -16,6 +16,21 @@ USAGE_TEMPLATE_FILE = BASE_DIR / "config" / "usage_prompt_template.md"
 
 FINAL_OUTPUT = OUTPUT_DIR / "Personalized-Humanizer-Complete.md"
 
+PRIORITY_PREAMBLE = """# Priority Hierarchy (Important)
+
+This document contains two types of instructions:
+
+1. **Personalized Style Instructions** (Narrative Overview, Style Guide Template, Few‑Shot Examples)  
+   These describe the **writer’s actual habits** and **must be followed first**. They define the core voice, sentence rhythm, punctuation, and phrasing patterns.
+
+2. **Anti‑AI Writing Rules** (Profile‑Specific Critical, Full Anti‑AI Rules)  
+   These are **secondary** and are provided only to help avoid machine‑detectable patterns. **If any anti‑AI rule conflicts with the writer’s measured style, the writer’s style wins.** Do not sacrifice the user’s authentic voice to satisfy a generic anti‑AI rule.
+
+Unless a rule is a hard constraint (e.g., “do not mention AI,” “do not invent facts”), apply the anti‑AI rules only where they do not contradict the personalized metrics.
+
+---
+"""
+
 def read_file(path: Path) -> str:
     if path.exists():
         return path.read_text(encoding="utf-8").strip()
@@ -47,6 +62,10 @@ def main():
         sys.exit(1)
 
     parts = []
+
+    # Insert priority preamble at the very top
+    parts.append(PRIORITY_PREAMBLE)
+
     if prose:
         parts.append("# Narrative Overview\n\n" + prose)
     parts.append(template)
