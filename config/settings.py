@@ -48,6 +48,11 @@ FEW_SHOT_EXAMPLE_COUNT = 100
 # Number of examples used in summarize.py to feed LLM prompt
 SUMMARIZE_EXAMPLE_COUNT = 8
 
+# Burstiness parameters (used in usage prompt template)
+SENTENCE_WORD_COUNT_DEVIATION = 10   # allowed +/- words around the average sentence length
+PARAGRAPH_WORD_COUNT_DEVIATION = 40  # allowed +/- words around the average paragraph length
+BURSTINESS_STRENGTH = 0.7            # optional: not directly used in template, but could be referenced
+
 # Validation settings
 VALIDATION_TOPIC = "the importance of time management in daily life"
 VALIDATION_NUM_PREDICT = 800             # enough for a non-reasoning model to produce 200 words

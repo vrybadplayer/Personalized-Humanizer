@@ -3,7 +3,12 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from config.settings import OUTPUT_DIR, BASE_DIR
+from config.settings import (
+    OUTPUT_DIR,
+    BASE_DIR,
+    SENTENCE_WORD_COUNT_DEVIATION,
+    PARAGRAPH_WORD_COUNT_DEVIATION,
+)
 
 PROSE_GUIDE = OUTPUT_DIR / "Personalized-Humanizer.md"
 TEMPLATE_GUIDE = OUTPUT_DIR / "Personalized-Humanizer-Template.md"
@@ -60,6 +65,17 @@ def main():
     if not template:
         print("Template guide missing. Run build_guide_from_template.py first.")
         sys.exit(1)
+
+    # Replace burstiness placeholders in usage_template
+    if usage_template:
+        usage_template = usage_template.replace(
+            "{{SENTENCE_WORD_COUNT_DEVIATION}}",
+            str(SENTENCE_WORD_COUNT_DEVIATION)
+        )
+        usage_template = usage_template.replace(
+            "{{PARAGRAPH_WORD_COUNT_DEVIATION}}",
+            str(PARAGRAPH_WORD_COUNT_DEVIATION)
+        )
 
     parts = []
 

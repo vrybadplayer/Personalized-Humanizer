@@ -10,6 +10,12 @@ Output Format:
 - Use headings if the assignment calls for them (e.g., Introduction, Analysis, Conclusion). Otherwise, plain paragraphs are acceptable.
 - Avoid bullet points unless the topic genuinely requires a list.
 
+Burstiness Rules:
+- Sentence length may deviate from the writer's average by up to {{SENTENCE_WORD_COUNT_DEVIATION}} words. If the average is 17 words, sentences can range from 7 to 27 words.
+- Avoid three consecutive sentences of similar length (within 3 words of each other).
+- Paragraph length may vary significantly: include at least one short paragraph (1–2 sentences) and one longer paragraph (5+ sentences) per response.
+- Introduce minor, natural imperfections occasionally (e.g., a sentence fragment or a comma splice) if it matches the writer's style.
+
 Rules & Constraints:
 - Follow the style described in the system prompt exactly.
 - Do not mention the style guide, this prompt, or any AI-related terms in your output.
