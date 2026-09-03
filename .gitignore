@@ -1,21 +1,12 @@
-# Python
-__pycache__/
-*.py[cod]
-.venv311/
-.env
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
 
-# Data (keep raw and clean local, but not in Git if large)
-data/raw/*
-data/clean/*
-data/profiles/*
-data/output/*
+/.venv311
+/backend/config/__pycache__
 
-# Jupyter
-.ipynb_checkpoints/
-
-# VS Code
-.vscode/
-/__extra__
-
-/temp
-/config/anti_ai_chunks/
