@@ -159,18 +159,7 @@ def main():
             sys.exit(1)
 
     print("\nSetup completed successfully!")
-
-    # 7. Optionally run pipeline
-    print("\nDo you want to run the full pipeline now? (y/n)")
-    ans = input().lower().strip()
-    if ans == 'y':
-        if not run_pipeline(venv_python):
-            print("Pipeline failed.")
-            sys.exit(1)
-        print("\nPipeline completed!")
-    else:
-        print("You can run the pipeline later with: python scripts/run_pipeline.py")
-        print("(Make sure to activate the virtual environment first, or use the venv's Python directly.)")
+    print("You can now start the web application with 'npm run dev' and trigger the pipeline directly from the UI.")
 
 if __name__ == "__main__":
     main()
