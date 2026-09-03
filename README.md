@@ -4,13 +4,14 @@ An end-to-end writing style extraction and personalization platform. It analyzes
 
 ---
 
-## Clean System Architecture
+## System Architecture
 
 ```
 Personalized-Humanizer/
 ├── backend/                  # Self-contained Python Engine & Config
 │   ├── config/               # System settings (settings.py), templates & Anti-AI rules
 │   ├── scripts/              # Pipeline scripts (ingest, extract_features, generate_guide, etc.)
+│   ├── setup_orchestrator.py # Automated setup script for venv & dependencies
 │   ├── anti_ai_skill_raw.md  # Core Anti-AI rule repository
 │   └── requirements.txt      # Python dependencies
 ├── server/                   # Express API Bridge & Data Models
@@ -22,52 +23,26 @@ Personalized-Humanizer/
 
 ---
 
-## Environment & API Keys
-
-- **No Gemini API keys required**: The pipeline runs using local LLM inference engines (e.g. Ollama via `deepseek-r1:8b` / `llama3.2:3b`) or local stylometry feature extractors.
-- All system settings and hyper-parameters are read from and written directly to **`backend/config/settings.py`**.
-
----
-
 ## One-Time Local Setup
 
-### Prerequisites
-
-1. **Node.js**: v18 or higher
-2. **Python**: Python 3.9+ with `pip` and `venv`
-3. **Ollama** *(Optional)*: If running local LLM steps (`ollama pull deepseek-r1:8b`)
-
----
-
-### Step-by-Step Terminal Setup
-
-#### 1. Clone & Navigate into Directory
+### 1. Clone & Navigate into Directory
 ```bash
 git clone https://github.com/vrybadplayer/Personalized-Humanizer.git
 cd Personalized-Humanizer
 ```
 
-#### 2. Create and Activate Python Virtual Environment
+### 2. Run Setup Orchestrator & Install Node Packages
+`setup_orchestrator.py` automatically creates the virtual environment (`.venv`), upgrades `pip`, installs `requirements.txt`, and downloads required NLP models (spaCy & NLTK data):
 
-**Windows (PowerShell):**
-```powershell
-python -m venv .venv
-\.venv\Scripts\Activate.ps1
-```
-
-**macOS / Linux:**
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-```
+# Automated Python setup (creates .venv & installs dependencies)
+python backend/setup_orchestrator.py
 
-#### 3. Install Dependencies
-```bash
-pip install -r backend/requirements.txt
+# Install Node.js dependencies
 npm install
 ```
 
-#### 4. Launch Web Application
+### 3. Launch Web Application
 ```bash
 npm run dev
 ```
