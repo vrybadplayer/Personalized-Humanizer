@@ -14,12 +14,8 @@ VENV_DIR = ROOT_DIR / ".venv311"
 REQUIREMENTS_FILE = BASE_DIR / "requirements.txt"
 RAW_ANTI_AI_FILE = BASE_DIR / "anti_ai_skill_raw.md"
 
-# Anti-AI chunking defaults (now using absolute paths)
-CHUNK_INPUT_FILE = RAW_ANTI_AI_FILE
-CHUNK_OUTPUT_DIR = BASE_DIR / "config" / "anti_ai_chunks"
-
 # Python versions to look for in setup orchestrator
-SUPPORTED_PYTHON_MINORS = [11, 12]
+SUPPORTED_PYTHON_MINORS = [9, 10, 11, 12, 13]
 
 # spaCy model to use (install with: python -m spacy download en_core_web_md)
 SPACY_MODEL = "en_core_web_md"
@@ -63,5 +59,5 @@ VALIDATION_TOPIC = "the importance of time management in daily life"
 VALIDATION_NUM_PREDICT = 800             # enough for a non-reasoning model to produce 200 words
 
 # Anti-AI chunking defaults
-CHUNK_INPUT_FILE = "anti_ai_skill_raw.md"
-CHUNK_OUTPUT_DIR = "config/anti_ai_chunks"
+CHUNK_INPUT_FILE = RAW_ANTI_AI_FILE
+CHUNK_OUTPUT_DIR = BASE_DIR / "config" / "anti_ai_chunks"

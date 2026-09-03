@@ -37,23 +37,27 @@ def get_python_version(python_exe):
     return None
 
 def find_supported_python():
-    """Try to find a Python 3.11 or 3.12 executable."""
-    # First check current Python
+    """Try to find a Python 3 executable."""
+    # First check current Python running this script
     cur = sys.executable
     ver = get_python_version(cur)
-    if ver and ver[0] == 3 and ver[1] in SUPPORTED_PYTHON_MINORS:
+    if ver and ver[0] == 3 and ver[1] >= 8:
         return cur
 
     # Try py launcher
     py_exe = shutil.which("py")
     if py_exe:
-        for minor in SUPPORTED_PYTHON_MINORS:
+        for minor in [12, 11, 10, 13, 9]:
             try:
                 out = subprocess.check_output([py_exe, f"-3.{minor}", "--version"], text=True, stderr=subprocess.STDOUT)
                 if f"3.{minor}" in out:
                     return py_exe, f"-3.{minor}"
             except Exception:
                 continue
+
+    if ver and ver[0] == 3:
+        return cur
+
     return None
 
 def create_venv(python_exe):
