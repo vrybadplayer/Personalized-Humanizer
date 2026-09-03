@@ -80,7 +80,7 @@ def get_venv_python():
 
 def install_requirements(venv_python):
     print("\nInstalling requirements...")
-    run_command([str(venv_python), "-m", "pip", "install", "--upgrade", "pip"])
+    run_command([str(venv_python), "-m", "pip", "install", "--upgrade", "pip", "wheel"])
     return run_command([str(venv_python), "-m", "pip", "install", "-r", str(REQUIREMENTS_FILE)])
 
 def download_spacy_model(venv_python):
