@@ -10,3 +10,4 @@ coverage/
 /.venv311
 /backend/config/__pycache__
 
+/data
