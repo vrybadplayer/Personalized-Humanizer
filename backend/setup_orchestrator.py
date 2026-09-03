@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent))
 
 from config.settings import (
+    ROOT_DIR,
     VENV_DIR,
     REQUIREMENTS_FILE,
     RAW_ANTI_AI_FILE,
@@ -113,6 +114,17 @@ def chunk_anti_ai_skill(venv_python):
     cmd = [str(venv_python), str(CHUNK_ANTI_AI_SCRIPT)]
     return run_command(cmd)
 
+def install_npm_dependencies():
+    print("\nInstalling Node.js dependencies (npm install)...")
+    npm_cmd = "npm.cmd" if sys.platform == "win32" else "npm"
+    try:
+        subprocess.check_call([npm_cmd, "install"], cwd=ROOT_DIR)
+        print("Node.js dependencies installed successfully.")
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"Warning: Failed to run 'npm install'. Please ensure Node.js is installed. Error: {e}")
+        return False
+
 def run_pipeline(venv_python):
     print("\nRunning full pipeline...")
     cmd = [str(venv_python), str(PIPELINE_SCRIPT)]
@@ -157,6 +169,10 @@ def main():
         ans = input().lower()
         if ans != 'y':
             sys.exit(1)
+
+    # 7. Install Node.js npm dependencies
+    print("\nInstalling npm dependencies!")
+    install_npm_dependencies()
 
     print("\nSetup completed successfully!")
     print("You can now start the web application with 'npm run dev' and trigger the pipeline directly from the UI.")
