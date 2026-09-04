@@ -33,25 +33,25 @@ CHUNK_ANTI_AI_SCRIPT = BASE_DIR / "scripts" / "chunk_anti_ai_skill.py"
 PIPELINE_SCRIPT = BASE_DIR / "scripts" / "run_pipeline.py"
 
 # LLM settings (Ollama)
-OLLAMA_MODEL = "deepseek-r1:8b"          # for narrative generation
+OLLAMA_MODEL = "llama3.2:3b"
 VALIDATION_MODEL = "llama3.2:3b"         # for validation (non-reasoning)
 OLLAMA_API_URL = "http://localhost:11434"
 OLLAMA_CONTEXT_SIZE = 8192      # 12288    18000
 
 # Generation parameters for narrative style guide (used in generate_guide.py)
-GENERATION_TEMPERATURE = 0.5     # Can be tweaked to be more creative
+GENERATION_TEMPERATURE = 0.62
 GENERATION_NUM_PREDICT = 1200
 GENERATION_TOP_P = 0.5
 
 # Few-shot prompt settings for Final result
-FEW_SHOT_EXAMPLE_COUNT = 100
+FEW_SHOT_EXAMPLE_COUNT = 10
 
 # Number of examples used in summarize.py to feed LLM prompt
 SUMMARIZE_EXAMPLE_COUNT = 8
 
 # Burstiness parameters (used in usage prompt template)
-SENTENCE_WORD_COUNT_DEVIATION = 10   # allowed +/- words around the average sentence length
-PARAGRAPH_WORD_COUNT_DEVIATION = 40  # allowed +/- words around the average paragraph length
+SENTENCE_WORD_COUNT_DEVIATION = 15
+PARAGRAPH_WORD_COUNT_DEVIATION = 40
 BURSTINESS_STRENGTH = 0.7            # optional: not directly used in template, but could be referenced
 
 # Validation settings
@@ -61,3 +61,5 @@ VALIDATION_NUM_PREDICT = 800             # enough for a non-reasoning model to p
 # Anti-AI chunking defaults
 CHUNK_INPUT_FILE = RAW_ANTI_AI_FILE
 CHUNK_OUTPUT_DIR = BASE_DIR / "config" / "anti_ai_chunks"
+BURSTINESS_TARGET_INDEX = 0.95
+VOCABULARY_DIVERSITY_FLOOR = 0.42

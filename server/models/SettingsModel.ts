@@ -16,13 +16,13 @@ const SETTINGS_FILE_PATH = path.resolve(process.cwd(), 'backend/config/settings.
 
 export class SettingsModel {
   private static defaultSettings: AppSettings = {
-    GENERATION_TEMPERATURE: 0.72,
-    FEW_SHOT_EXAMPLE_COUNT: 3,
-    SUMMARIZE_EXAMPLE_COUNT: 5,
-    SENTENCE_WORD_COUNT_DEVIATION: 4.5,
-    PARAGRAPH_WORD_COUNT_DEVIATION: 15.0,
-    OLLAMA_MODEL: 'llama3:latest',
-    BURSTINESS_TARGET_INDEX: 0.68,
+    GENERATION_TEMPERATURE: 0.5,
+    FEW_SHOT_EXAMPLE_COUNT: 100,
+    SUMMARIZE_EXAMPLE_COUNT: 8,
+    SENTENCE_WORD_COUNT_DEVIATION: 10.0,
+    PARAGRAPH_WORD_COUNT_DEVIATION: 40.0,
+    OLLAMA_MODEL: 'deepseek-r1:8b',
+    BURSTINESS_TARGET_INDEX: 0.7,
     VOCABULARY_DIVERSITY_FLOOR: 0.42
   };
 
@@ -32,20 +32,19 @@ export class SettingsModel {
   public static getSettings(): AppSettings {
     try {
       if (!fs.existsSync(SETTINGS_FILE_PATH)) {
-        this.saveSettings(this.defaultSettings);
         return { ...this.defaultSettings };
       }
 
       const content = fs.readFileSync(SETTINGS_FILE_PATH, 'utf-8');
       
-      const tempMatch = content.match(/GENERATION_TEMPERATURE\s*=\s*([0-9.]+)/);
-      const fewShotMatch = content.match(/FEW_SHOT_EXAMPLE_COUNT\s*=\s*([0-9]+)/);
-      const summarizeMatch = content.match(/SUMMARIZE_EXAMPLE_COUNT\s*=\s*([0-9]+)/);
-      const sentDevMatch = content.match(/SENTENCE_WORD_COUNT_DEVIATION\s*=\s*([0-9.]+)/);
-      const paraDevMatch = content.match(/PARAGRAPH_WORD_COUNT_DEVIATION\s*=\s*([0-9.]+)/);
-      const modelMatch = content.match(/OLLAMA_MODEL\s*=\s*["']([^"']+)["']/);
-      const burstMatch = content.match(/BURSTINESS_TARGET_INDEX\s*=\s*([0-9.]+)/);
-      const vocabMatch = content.match(/VOCABULARY_DIVERSITY_FLOOR\s*=\s*([0-9.]+)/);
+      const tempMatch = content.match(/^GENERATION_TEMPERATURE\s*=\s*([0-9.]+)/m);
+      const fewShotMatch = content.match(/^FEW_SHOT_EXAMPLE_COUNT\s*=\s*([0-9]+)/m);
+      const summarizeMatch = content.match(/^SUMMARIZE_EXAMPLE_COUNT\s*=\s*([0-9]+)/m);
+      const sentDevMatch = content.match(/^SENTENCE_WORD_COUNT_DEVIATION\s*=\s*([0-9.]+)/m);
+      const paraDevMatch = content.match(/^PARAGRAPH_WORD_COUNT_DEVIATION\s*=\s*([0-9.]+)/m);
+      const modelMatch = content.match(/^OLLAMA_MODEL\s*=\s*["']([^"']+)["']/m);
+      const burstMatch = content.match(/^BURSTINESS_TARGET_INDEX\s*=\s*([0-9.]+)/m);
+      const vocabMatch = content.match(/^VOCABULARY_DIVERSITY_FLOOR\s*=\s*([0-9.]+)/m);
 
       return {
         GENERATION_TEMPERATURE: tempMatch ? parseFloat(tempMatch[1]) : this.defaultSettings.GENERATION_TEMPERATURE,
@@ -64,7 +63,7 @@ export class SettingsModel {
   }
 
   /**
-   * Writes updated parameters directly into settings.py
+   * Safely updates variable lines inside settings.py WITHOUT overwriting other constants/paths
    */
   public static saveSettings(settings: Partial<AppSettings>): AppSettings {
     const current = this.getSettings();
@@ -79,46 +78,42 @@ export class SettingsModel {
       VOCABULARY_DIVERSITY_FLOOR: settings.VOCABULARY_DIVERSITY_FLOOR !== undefined ? Number(settings.VOCABULARY_DIVERSITY_FLOOR) : current.VOCABULARY_DIVERSITY_FLOOR,
     };
 
-    const pythonCode = `"""
-Personalized Humanizer - Global Configuration & Hyperparameters
-Generated and dynamically synchronized via the Personalized Humanizer UI.
-"""
+    if (!fs.existsSync(SETTINGS_FILE_PATH)) {
+      console.error(`settings.py not found at ${SETTINGS_FILE_PATH}`);
+      return updated;
+    }
 
-import os
-from pathlib import Path
+    let fileContent = fs.readFileSync(SETTINGS_FILE_PATH, 'utf-8');
 
-# Base Paths
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-DATA_RAW_DIR = DATA_DIR / "raw"
-DATA_CLEAN_DIR = DATA_DIR / "clean"
-DATA_PROFILES_DIR = DATA_DIR / "profiles"
-DATA_OUTPUT_DIR = DATA_DIR / "output"
+    // Helper function to update or append variable assignment in Python
+    const setPyVar = (key: string, value: string | number) => {
+      const formattedVal = typeof value === 'string' ? `"${value}"` : value;
+      const regex = new RegExp(`^${key}\\s*=.*$`, 'm');
+      
+      if (regex.test(fileContent)) {
+        fileContent = fileContent.replace(regex, `${key} = ${formattedVal}`);
+      } else {
+        fileContent += `\n${key} = ${formattedVal}`;
+      }
+    };
 
-# Output target file (Changed to SKILL.md per specification)
-OUTPUT_SKILL_FILE = DATA_OUTPUT_DIR / "SKILL.md"
+    // Replace ONLY the user-configurable hyperparameters
+    setPyVar('GENERATION_TEMPERATURE', updated.GENERATION_TEMPERATURE);
+    setPyVar('FEW_SHOT_EXAMPLE_COUNT', updated.FEW_SHOT_EXAMPLE_COUNT);
+    setPyVar('SUMMARIZE_EXAMPLE_COUNT', updated.SUMMARIZE_EXAMPLE_COUNT);
+    setPyVar('SENTENCE_WORD_COUNT_DEVIATION', updated.SENTENCE_WORD_COUNT_DEVIATION);
+    setPyVar('PARAGRAPH_WORD_COUNT_DEVIATION', updated.PARAGRAPH_WORD_COUNT_DEVIATION);
+    setPyVar('OLLAMA_MODEL', updated.OLLAMA_MODEL);
 
-# -------------------------------------------------------------
-# User-Configurable Parameters (Synced with UI Settings)
-# -------------------------------------------------------------
-GENERATION_TEMPERATURE = ${updated.GENERATION_TEMPERATURE.toFixed(2)}
-FEW_SHOT_EXAMPLE_COUNT = ${updated.FEW_SHOT_EXAMPLE_COUNT}
-SUMMARIZE_EXAMPLE_COUNT = ${updated.SUMMARIZE_EXAMPLE_COUNT}
-SENTENCE_WORD_COUNT_DEVIATION = ${updated.SENTENCE_WORD_COUNT_DEVIATION.toFixed(1)}
-PARAGRAPH_WORD_COUNT_DEVIATION = ${updated.PARAGRAPH_WORD_COUNT_DEVIATION.toFixed(1)}
-OLLAMA_MODEL = "${updated.OLLAMA_MODEL}"
+    if (updated.BURSTINESS_TARGET_INDEX !== undefined) {
+      setPyVar('BURSTINESS_TARGET_INDEX', updated.BURSTINESS_TARGET_INDEX);
+    }
+    if (updated.VOCABULARY_DIVERSITY_FLOOR !== undefined) {
+      setPyVar('VOCABULARY_DIVERSITY_FLOOR', updated.VOCABULARY_DIVERSITY_FLOOR);
+    }
 
-# -------------------------------------------------------------
-# Anti-AI Detection & Stylometry Tuning Parameters
-# -------------------------------------------------------------
-BURSTINESS_TARGET_INDEX = ${(updated.BURSTINESS_TARGET_INDEX || 0.68).toFixed(2)}
-VOCABULARY_DIVERSITY_FLOOR = ${(updated.VOCABULARY_DIVERSITY_FLOOR || 0.42).toFixed(2)}
-BAN_ROBOTIC_TRANSITIONS = True
-INJECT_AUTHENTIC_IDIOSYNCRASIES = True
-MAX_TOKEN_CONTEXT = 8192
-`;
-
-    fs.writeFileSync(SETTINGS_FILE_PATH, pythonCode, 'utf-8');
+    // Overwrite file safely while keeping ROOT_DIR, RAW_DATA_DIR, VENV_DIR, etc. intact
+    fs.writeFileSync(SETTINGS_FILE_PATH, fileContent, 'utf-8');
     return updated;
   }
 }
