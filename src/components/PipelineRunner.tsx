@@ -26,17 +26,61 @@ export const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const currentStage = pipelineState.currentStage;
   const profile = pipelineState.profile;
 
-  // Safely extract metadata with fallback values
-  const burstiness = profile?.stylistic_fingerprint?.burstiness_index ?? 0;
-  const meanLength = profile?.sentence_metrics?.mean_length ?? 0;
-  const targetSentenceDev = profile?.metadata?.target_sentence_deviation ?? 0;
-  const obsSentenceDev = profile?.sentence_metrics?.observed_deviation ?? 0;
-  const targetParagraphDev = profile?.metadata?.target_paragraph_deviation ?? 0;
-  const obsParagraphDev = profile?.paragraph_metrics?.observed_deviation ?? 0;
-  const rhythmVariation = profile?.stylistic_fingerprint?.rhythm_variation?.split(' ')[0] ?? '';
-  const typeTokenRatio = profile?.statistics?.type_token_ratio ?? 0;
-  const uniqueWords = profile?.statistics?.unique_words ?? 0;
-  const genTemperature = profile?.metadata?.generation_temperature ?? settings?.GENERATION_TEMPERATURE ?? 0.7;
+  // Safe type-cast for dynamic/optional fallback properties
+  const profileAny = profile as any;
+
+  // Safely extract stylometric metrics with multi-key fallbacks to settings.py
+  const burstiness = 
+    profile?.stylistic_fingerprint?.burstiness_index ?? 
+    profileAny?.burstiness_index ?? 
+    settings?.BURSTINESS_TARGET_INDEX ?? 
+    0.95;
+
+  const meanLength = 
+    profile?.sentence_metrics?.mean_length ?? 
+    profileAny?.sentence_metrics?.mean ?? 
+    15;
+
+  const targetSentenceDev = 
+    profileAny?.metadata?.target_sentence_deviation ?? 
+    settings?.SENTENCE_WORD_COUNT_DEVIATION ?? 
+    15;
+
+  const obsSentenceDev = 
+    profile?.sentence_metrics?.observed_deviation ?? 
+    profileAny?.sentence_metrics?.std_length ?? 
+    profileAny?.sentence_metrics?.std_dev ?? 
+    0;
+
+  const targetParagraphDev = 
+    profileAny?.metadata?.target_paragraph_deviation ?? 
+    settings?.PARAGRAPH_WORD_COUNT_DEVIATION ?? 
+    40;
+
+  const obsParagraphDev = 
+    profile?.paragraph_metrics?.observed_deviation ?? 
+    profileAny?.paragraph_metrics?.std_length ?? 
+    profileAny?.paragraph_metrics?.std_dev ?? 
+    0;
+
+  const rhythmVariation = 
+    profile?.stylistic_fingerprint?.rhythm_variation?.split(' ')[0] ?? 
+    'Balanced';
+
+  const typeTokenRatio = 
+    profile?.statistics?.type_token_ratio ?? 
+    profileAny?.lexical_diversity?.type_token_ratio ?? 
+    0;
+
+  const uniqueWords = 
+    profile?.statistics?.unique_words ?? 
+    profileAny?.lexical_diversity?.unique_words ?? 
+    0;
+
+  const genTemperature = 
+    profileAny?.metadata?.generation_temperature ?? 
+    settings?.GENERATION_TEMPERATURE ?? 
+    0.62;
 
   const copyUsagePrompt = () => {
     if (!profile) return;
@@ -74,7 +118,7 @@ Act as an author writing with the following stylometric constraints:
               </h2>
               {settings && (
                 <span className="text-[11px] font-mono text-gray-600 bg-[#F9F9F9] border border-[#EEEEEE] px-2 py-0.5 rounded-md">
-                  {settings.OLLAMA_MODEL} (T={settings.GENERATION_TEMPERATURE})
+                  {settings.OLLAMA_MODEL} (T={genTemperature})
                 </span>
               )}
             </div>
