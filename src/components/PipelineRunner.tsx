@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Loader2, Download, CheckCircle2, AlertTriangle, FileCode2, Copy, Sparkles, Sliders } from 'lucide-react';
+import { Play, Loader2, Download, CheckCircle2, AlertTriangle, FileCode2, Copy, Sparkles } from 'lucide-react';
 import { PipelineState, AppSettings } from '../types';
 
 interface PipelineRunnerProps {
@@ -26,14 +26,26 @@ export const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const currentStage = pipelineState.currentStage;
   const profile = pipelineState.profile;
 
+  // Safely extract metadata with fallback values
+  const burstiness = profile?.stylistic_fingerprint?.burstiness_index ?? 0;
+  const meanLength = profile?.sentence_metrics?.mean_length ?? 0;
+  const targetSentenceDev = profile?.metadata?.target_sentence_deviation ?? 0;
+  const obsSentenceDev = profile?.sentence_metrics?.observed_deviation ?? 0;
+  const targetParagraphDev = profile?.metadata?.target_paragraph_deviation ?? 0;
+  const obsParagraphDev = profile?.paragraph_metrics?.observed_deviation ?? 0;
+  const rhythmVariation = profile?.stylistic_fingerprint?.rhythm_variation?.split(' ')[0] ?? '';
+  const typeTokenRatio = profile?.statistics?.type_token_ratio ?? 0;
+  const uniqueWords = profile?.statistics?.unique_words ?? 0;
+  const genTemperature = profile?.metadata?.generation_temperature ?? settings?.GENERATION_TEMPERATURE ?? 0.7;
+
   const copyUsagePrompt = () => {
     if (!profile) return;
     const template = `[SYSTEM / STYLE INSTRUCTION]
 Act as an author writing with the following stylometric constraints:
-- Persona: Direct, authentic human voice calibrated with ${profile.stylistic_fingerprint.burstiness_index} burstiness.
-- Sentence Cadence: Average ${profile.sentence_metrics.mean_length} words with high variance (±${profile.metadata.target_sentence_deviation} words). Alternate between short punchy sentences and fluid compound thoughts.
+- Persona: Direct, authentic human voice calibrated with ${burstiness} burstiness.
+- Sentence Cadence: Average ${meanLength} words with high variance (±${targetSentenceDev} words). Alternate between short punchy sentences and fluid compound thoughts.
 - Anti-AI Constraint: Strictly avoid robotic transitions (no "furthermore", "moreover", "delve", "testament", "tapestry"). Use natural human rhythm and occasional parenthetical aside.
-- Temperature: ${profile.metadata.generation_temperature}
+- Temperature: ${genTemperature}
 
 [USER TASK]
 `;
@@ -231,10 +243,10 @@ Act as an author writing with the following stylometric constraints:
               </span>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-xl font-bold text-[#1A1A1A] font-mono">
-                  ±{profile.metadata.target_sentence_deviation}
+                  ±{targetSentenceDev}
                 </span>
                 <span className="text-[11px] text-gray-400 font-mono">
-                  (obs: {profile.sentence_metrics.observed_deviation})
+                  (obs: {obsSentenceDev})
                 </span>
               </div>
             </div>
@@ -245,10 +257,10 @@ Act as an author writing with the following stylometric constraints:
               </span>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-xl font-bold text-[#1A1A1A] font-mono">
-                  ±{profile.metadata.target_paragraph_deviation}
+                  ±{targetParagraphDev}
                 </span>
                 <span className="text-[11px] text-gray-400 font-mono">
-                  (obs: {profile.paragraph_metrics.observed_deviation})
+                  (obs: {obsParagraphDev})
                 </span>
               </div>
             </div>
@@ -259,10 +271,10 @@ Act as an author writing with the following stylometric constraints:
               </span>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-xl font-bold text-[#1A1A1A] font-mono">
-                  {profile.stylistic_fingerprint.burstiness_index}
+                  {burstiness}
                 </span>
                 <span className="text-[11px] text-gray-400 font-mono">
-                  {profile.stylistic_fingerprint.rhythm_variation.split(' ')[0]}
+                  {rhythmVariation}
                 </span>
               </div>
             </div>
@@ -273,10 +285,10 @@ Act as an author writing with the following stylometric constraints:
               </span>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-xl font-bold text-[#1A1A1A] font-mono">
-                  {profile.statistics.type_token_ratio}
+                  {typeTokenRatio}
                 </span>
                 <span className="text-[11px] text-gray-400 font-mono">
-                  ({profile.statistics.unique_words} uniq)
+                  ({uniqueWords} uniq)
                 </span>
               </div>
             </div>
@@ -299,7 +311,7 @@ Act as an author writing with the following stylometric constraints:
             </div>
             <pre className="text-gray-700 overflow-x-auto whitespace-pre-wrap leading-relaxed">
 {`[SYSTEM / STYLE INSTRUCTION]
-Act as an author with burstiness ${profile.stylistic_fingerprint.burstiness_index}, sentence deviation ±${profile.metadata.target_sentence_deviation} words, paragraph deviation ±${profile.metadata.target_paragraph_deviation} words, and temperature ${profile.metadata.generation_temperature}. Strictly avoid robotic AI transitions ("furthermore", "moreover", "delve", "testament").`}
+Act as an author with burstiness ${burstiness}, sentence deviation ±${targetSentenceDev} words, paragraph deviation ±${targetParagraphDev} words, and temperature ${genTemperature}. Strictly avoid robotic AI transitions ("furthermore", "moreover", "delve", "testament").`}
             </pre>
           </div>
         </div>
