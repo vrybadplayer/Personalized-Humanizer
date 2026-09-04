@@ -39,7 +39,7 @@ OLLAMA_API_URL = "http://localhost:11434"
 OLLAMA_CONTEXT_SIZE = 8192      # 12288    18000
 
 # Generation parameters for narrative style guide (used in generate_guide.py)
-GENERATION_TEMPERATURE = 0.62
+GENERATION_TEMPERATURE = 0.5
 GENERATION_NUM_PREDICT = 1200
 GENERATION_TOP_P = 0.5
 
