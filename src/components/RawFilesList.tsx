@@ -91,7 +91,7 @@ export const RawFilesList: React.FC<RawFilesListProps> = ({ files, onDeleteFile 
 
               {/* Preview Snippet */}
               {isExpanded && (
-                <div className="mt-3 pt-3 border-t border-[#EDEDED] text-xs text-gray-600 bg-[#F9F9F9] p-3 rounded-lg font-mono leading-relaxed break-words">
+                <div className="mt-3 pt-3 border-t border-[#EDEDED] text-xs text-gray-600 bg-[#F9F9F9] p-3 rounded-lg font-mono leading-relaxed wrap-break-word">
                   {file.preview || '(Empty preview)'}
                 </div>
               )}
