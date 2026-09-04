@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent))
 
 from config.settings import (
+    ROOT_DIR,
     VENV_DIR,
     REQUIREMENTS_FILE,
     RAW_ANTI_AI_FILE,
@@ -37,23 +38,27 @@ def get_python_version(python_exe):
     return None
 
 def find_supported_python():
-    """Try to find a Python 3.11 or 3.12 executable."""
-    # First check current Python
+    """Try to find a Python 3 executable."""
+    # First check current Python running this script
     cur = sys.executable
     ver = get_python_version(cur)
-    if ver and ver[0] == 3 and ver[1] in SUPPORTED_PYTHON_MINORS:
+    if ver and ver[0] == 3 and ver[1] >= 8:
         return cur
 
     # Try py launcher
     py_exe = shutil.which("py")
     if py_exe:
-        for minor in SUPPORTED_PYTHON_MINORS:
+        for minor in [12, 11, 10, 13, 9]:
             try:
                 out = subprocess.check_output([py_exe, f"-3.{minor}", "--version"], text=True, stderr=subprocess.STDOUT)
                 if f"3.{minor}" in out:
                     return py_exe, f"-3.{minor}"
             except Exception:
                 continue
+
+    if ver and ver[0] == 3:
+        return cur
+
     return None
 
 def create_venv(python_exe):
@@ -75,7 +80,7 @@ def get_venv_python():
 
 def install_requirements(venv_python):
     print("\nInstalling requirements...")
-    run_command([str(venv_python), "-m", "pip", "install", "--upgrade", "pip"])
+    run_command([str(venv_python), "-m", "pip", "install", "--upgrade", "pip", "wheel"])
     return run_command([str(venv_python), "-m", "pip", "install", "-r", str(REQUIREMENTS_FILE)])
 
 def download_spacy_model(venv_python):
@@ -108,6 +113,17 @@ def chunk_anti_ai_skill(venv_python):
     print("\nChunking anti-AI skill...")
     cmd = [str(venv_python), str(CHUNK_ANTI_AI_SCRIPT)]
     return run_command(cmd)
+
+def install_npm_dependencies():
+    print("\nInstalling Node.js dependencies (npm install)...")
+    npm_cmd = "npm.cmd" if sys.platform == "win32" else "npm"
+    try:
+        subprocess.check_call([npm_cmd, "install"], cwd=ROOT_DIR)
+        print("Node.js dependencies installed successfully.")
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"Warning: Failed to run 'npm install'. Please ensure Node.js is installed. Error: {e}")
+        return False
 
 def run_pipeline(venv_python):
     print("\nRunning full pipeline...")
@@ -154,19 +170,12 @@ def main():
         if ans != 'y':
             sys.exit(1)
 
-    print("\nSetup completed successfully!")
+    # 7. Install Node.js npm dependencies
+    print("\nInstalling npm dependencies!")
+    install_npm_dependencies()
 
-    # 7. Optionally run pipeline
-    print("\nDo you want to run the full pipeline now? (y/n)")
-    ans = input().lower().strip()
-    if ans == 'y':
-        if not run_pipeline(venv_python):
-            print("Pipeline failed.")
-            sys.exit(1)
-        print("\nPipeline completed!")
-    else:
-        print("You can run the pipeline later with: python scripts/run_pipeline.py")
-        print("(Make sure to activate the virtual environment first, or use the venv's Python directly.)")
+    print("\nSetup completed successfully!")
+    print("You can now start the web application with 'npm run dev' and trigger the pipeline directly from the UI.")
 
 if __name__ == "__main__":
     main()

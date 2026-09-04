@@ -1,0 +1,6 @@
+{
+  "name": "Personalized Humanizer",
+  "description": "Scan your authentic writing stylometry, calibrate linguistic deviations, and generate AI-proof humanized prompts and SKILL.md configurations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
