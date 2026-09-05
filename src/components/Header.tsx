@@ -24,18 +24,33 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="border-b border-[#E5E5E5] bg-white sticky top-0 z-30 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
       <div className="max-w-6xl mx-auto px-6 sm:px-10 py-5 flex items-center justify-between gap-4">
         {/* Brand identity */}
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-xl sm:text-2xl font-light tracking-tight text-[#1A1A1A]">
-              Personalized Humanizer
-            </h1>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F5F5F5] text-neutral-600 border border-[#E5E5E5] uppercase tracking-wider">
-              MVC
-            </span>
+        <div className="flex items-center gap-3.5">
+          <div className="relative flex items-center justify-center shrink-0">
+            <img
+              src="/favicon.png"
+              alt="Favicon"
+              className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
+              onError={(e) => {
+                // If favicon.png doesn't exist, hide image and show icon fallback
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+              referrerPolicy="no-referrer"
+            />
+            <Sparkles className="w-5 h-5 text-neutral-600 hidden group-has-[[style*='display: none']]:block" />
           </div>
-          <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 uppercase tracking-widest font-mono">
-            Authentic Stylometric Injection
-          </p>
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-xl sm:text-2xl font-light tracking-tight text-[#1A1A1A]">
+                Personalized Humanizer
+              </h1>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F5F5F5] text-neutral-600 border border-[#E5E5E5] uppercase tracking-wider">
+                MVC
+              </span>
+            </div>
+            <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 uppercase tracking-widest font-mono">
+              Authentic Stylometric Injection
+            </p>
+          </div>
         </div>
 
         {/* Global Controls & Status */}
