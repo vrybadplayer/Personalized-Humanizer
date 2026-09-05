@@ -85,11 +85,26 @@ export interface StylometryProfile {
   few_shot_examples: string[];
 }
 
+export interface ParsedPipelineError {
+  code: string;
+  title: string;
+  category: string;
+  userMessage: string;
+  recoverySteps: string[];
+  script?: string;
+  stage?: string;
+  lineInfo?: string;
+  technicalDetails?: string;
+  rawStderr?: string;
+  timestamp: string;
+}
+
 export interface PipelineState {
   status: 'idle' | 'running' | 'completed' | 'error';
   currentStage: PipelineProgressStage | null;
   logs: string[];
   lastError: string | null;
+  parsedError: ParsedPipelineError | null;
   startedAt: string | null;
   finishedAt: string | null;
   profile: StylometryProfile | null;

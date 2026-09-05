@@ -1,6 +1,22 @@
-import React from 'react';
-import { Play, Loader2, Download, CheckCircle2, AlertTriangle, FileCode2, Copy, Sparkles } from 'lucide-react';
-import { PipelineState, AppSettings } from '../types';
+import React, { useState } from 'react';
+import {
+  Play,
+  Loader2,
+  Download,
+  CheckCircle2,
+  AlertTriangle,
+  FileCode2,
+  Copy,
+  Sparkles,
+  Settings,
+  Terminal,
+  ChevronDown,
+  ChevronUp,
+  Check,
+  Wrench,
+  Info
+} from 'lucide-react';
+import { PipelineState, AppSettings, ParsedPipelineError } from '../types';
 
 interface PipelineRunnerProps {
   pipelineState: PipelineState;
@@ -19,7 +35,10 @@ export const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   onViewSkillModal,
   onOpenSettings,
 }) => {
-  const [copiedPrompt, setCopiedPrompt] = React.useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [copiedReport, setCopiedReport] = useState(false);
+  const [showDeveloperTrace, setShowDeveloperTrace] = useState(false);
+
   const isRunning = pipelineState.status === 'running';
   const isCompleted = pipelineState.status === 'completed';
   const isError = pipelineState.status === 'error';
@@ -30,56 +49,56 @@ export const PipelineRunner: React.FC<PipelineRunnerProps> = ({
   const profileAny = profile as any;
 
   // Safely extract stylometric metrics with multi-key fallbacks to settings.py
-  const burstiness = 
-    profile?.stylistic_fingerprint?.burstiness_index ?? 
-    profileAny?.burstiness_index ?? 
-    settings?.BURSTINESS_TARGET_INDEX ?? 
+  const burstiness =
+    profile?.stylistic_fingerprint?.burstiness_index ??
+    profileAny?.burstiness_index ??
+    settings?.BURSTINESS_TARGET_INDEX ??
     0.95;
 
-  const meanLength = 
-    profile?.sentence_metrics?.mean_length ?? 
-    profileAny?.sentence_metrics?.mean ?? 
+  const meanLength =
+    profile?.sentence_metrics?.mean_length ??
+    profileAny?.sentence_metrics?.mean ??
     15;
 
-  const targetSentenceDev = 
-    profileAny?.metadata?.target_sentence_deviation ?? 
-    settings?.SENTENCE_WORD_COUNT_DEVIATION ?? 
+  const targetSentenceDev =
+    profileAny?.metadata?.target_sentence_deviation ??
+    settings?.SENTENCE_WORD_COUNT_DEVIATION ??
     15;
 
-  const obsSentenceDev = 
-    profile?.sentence_metrics?.observed_deviation ?? 
-    profileAny?.sentence_metrics?.std_length ?? 
-    profileAny?.sentence_metrics?.std_dev ?? 
+  const obsSentenceDev =
+    profile?.sentence_metrics?.observed_deviation ??
+    profileAny?.sentence_metrics?.std_length ??
+    profileAny?.sentence_metrics?.std_dev ??
     0;
 
-  const targetParagraphDev = 
-    profileAny?.metadata?.target_paragraph_deviation ?? 
-    settings?.PARAGRAPH_WORD_COUNT_DEVIATION ?? 
+  const targetParagraphDev =
+    profileAny?.metadata?.target_paragraph_deviation ??
+    settings?.PARAGRAPH_WORD_COUNT_DEVIATION ??
     40;
 
-  const obsParagraphDev = 
-    profile?.paragraph_metrics?.observed_deviation ?? 
-    profileAny?.paragraph_metrics?.std_length ?? 
-    profileAny?.paragraph_metrics?.std_dev ?? 
+  const obsParagraphDev =
+    profile?.paragraph_metrics?.observed_deviation ??
+    profileAny?.paragraph_metrics?.std_length ??
+    profileAny?.paragraph_metrics?.std_dev ??
     0;
 
-  const rhythmVariation = 
-    profile?.stylistic_fingerprint?.rhythm_variation?.split(' ')[0] ?? 
+  const rhythmVariation =
+    profile?.stylistic_fingerprint?.rhythm_variation?.split(' ')[0] ??
     'Balanced';
 
-  const typeTokenRatio = 
-    profile?.statistics?.type_token_ratio ?? 
-    profileAny?.lexical_diversity?.type_token_ratio ?? 
+  const typeTokenRatio =
+    profile?.statistics?.type_token_ratio ??
+    profileAny?.lexical_diversity?.type_token_ratio ??
     0;
 
-  const uniqueWords = 
-    profile?.statistics?.unique_words ?? 
-    profileAny?.lexical_diversity?.unique_words ?? 
+  const uniqueWords =
+    profile?.statistics?.unique_words ??
+    profileAny?.lexical_diversity?.unique_words ??
     0;
 
-  const genTemperature = 
-    profileAny?.metadata?.generation_temperature ?? 
-    settings?.GENERATION_TEMPERATURE ?? 
+  const genTemperature =
+    profileAny?.metadata?.generation_temperature ??
+    settings?.GENERATION_TEMPERATURE ??
     0.62;
 
   const copyUsagePrompt = () => {
@@ -98,6 +117,34 @@ Act as an author writing with the following stylometric constraints:
     setTimeout(() => setCopiedPrompt(false), 2000);
   };
 
+  const copyErrorReport = (err: ParsedPipelineError) => {
+    const report = `==================== PIPELINE ERROR REPORT ====================
+Title       : ${err.title}
+Code        : ${err.code}
+Category    : ${err.category}
+Timestamp   : ${err.timestamp}
+Script      : ${err.script || 'N/A'}
+Stage       : ${err.stage || 'N/A'}
+Location    : ${err.lineInfo || 'N/A'}
+
+USER MESSAGE:
+${err.userMessage}
+
+RECOVERY STEPS:
+${err.recoverySteps.map((step, i) => `${i + 1}. ${step}`).join('\n')}
+
+TECHNICAL DETAILS:
+${err.technicalDetails || 'N/A'}
+
+RAW DEVELOPER TRACEBACK:
+${err.rawStderr || 'N/A'}
+===============================================================`;
+
+    navigator.clipboard.writeText(report);
+    setCopiedReport(true);
+    setTimeout(() => setCopiedReport(false), 2500);
+  };
+
   const STAGES = [
     { step: 1, label: 'Environment' },
     { step: 2, label: 'Ingestion' },
@@ -105,6 +152,23 @@ Act as an author writing with the following stylometric constraints:
     { step: 4, label: 'Anti-AI Rules' },
     { step: 5, label: 'SKILL.md' },
   ];
+
+  // Extract structured error or fallback gracefully
+  const parsedError: ParsedPipelineError | null = pipelineState.parsedError || (
+    pipelineState.lastError ? {
+      code: 'PIPELINE_EXECUTION_ERROR',
+      title: 'Pipeline Execution Failure',
+      category: 'System Exception',
+      userMessage: pipelineState.lastError,
+      recoverySteps: [
+        'Check Settings to verify model name and parameters.',
+        'Review the raw stack trace below for error location.',
+        'Ensure the Ollama service is active if using local LLMs.'
+      ],
+      rawStderr: pipelineState.lastError,
+      timestamp: new Date().toISOString()
+    } : null
+  );
 
   return (
     <div className="w-full space-y-6">
@@ -215,13 +279,120 @@ Act as an author writing with the following stylometric constraints:
           </div>
         )}
 
-        {/* Error State */}
-        {isError && (
-          <div className="mt-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 text-xs text-red-700">
-            <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-red-800">Pipeline Execution Error</p>
-              <p className="text-red-600 mt-0.5">{pipelineState.lastError}</p>
+        {/* Enterprise Error Banner */}
+        {isError && parsedError && (
+          <div className="mt-8 pt-6 border-t border-red-100 animate-in fade-in duration-300">
+            <div className="bg-red-50/80 border border-red-200/90 rounded-2xl p-5 sm:p-6 shadow-sm overflow-hidden">
+              {/* Header Badges & Title */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-red-100 border border-red-200 text-red-700 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-800 border border-red-200">
+                        {parsedError.category || 'Pipeline Error'}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-white/80 text-red-700 border border-red-200">
+                        {parsedError.code}
+                      </span>
+                      {parsedError.script && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-mono text-gray-600 bg-white/60 border border-red-100">
+                          {parsedError.script.split('/').pop()}
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="text-base sm:text-lg font-semibold text-red-950 tracking-tight">
+                      {parsedError.title}
+                    </h4>
+                  </div>
+                </div>
+              </div>
+
+              {/* Humanized User Message */}
+              <div className="mt-4 p-3.5 rounded-xl bg-white/90 border border-red-100 text-sm text-red-900 leading-relaxed font-normal shadow-2xs">
+                {parsedError.userMessage}
+              </div>
+
+              {/* Actionable Remediation Checklist */}
+              {parsedError.recoverySteps && parsedError.recoverySteps.length > 0 && (
+                <div className="mt-4 bg-red-100/40 border border-red-200/60 rounded-xl p-4">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-red-900 mb-2.5">
+                    <Wrench className="w-3.5 h-3.5 text-red-700" />
+                    <span>Suggested Remediation Steps</span>
+                  </div>
+                  <ul className="space-y-2 text-xs text-red-900">
+                    {parsedError.recoverySteps.map((step, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="w-4 h-4 rounded-full bg-red-200 text-red-800 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                          {idx + 1}
+                        </span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Quick Action Bar */}
+              <div className="mt-5 pt-4 border-t border-red-200/60 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  {parsedError.code === 'OLLAMA_MODEL_NOT_FOUND' && (
+                    <button
+                      type="button"
+                      onClick={onOpenSettings}
+                      className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-red-900 hover:bg-black text-white shadow-xs transition-all flex items-center gap-1.5"
+                    >
+                      <Settings className="w-3.5 h-3.5" />
+                      <span>Configure Model in Settings</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => copyErrorReport(parsedError)}
+                    className="px-3.5 py-2 rounded-xl text-xs font-medium bg-white hover:bg-red-50 text-red-800 border border-red-200 transition-all flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-red-600" />
+                    <span>{copiedReport ? 'Report Copied!' : 'Copy Error Report'}</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowDeveloperTrace(!showDeveloperTrace)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-mono text-red-800 hover:text-red-950 hover:bg-red-100/60 transition-all flex items-center gap-1.5"
+                >
+                  <Terminal className="w-3.5 h-3.5" />
+                  <span>{showDeveloperTrace ? 'Hide Developer Trace' : 'View Developer Trace'}</span>
+                  {showDeveloperTrace ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+
+              {/* Developer Trace / Stack Trace Drawer */}
+              {showDeveloperTrace && (
+                <div className="mt-4 pt-4 border-t border-red-200/80 animate-in slide-in-from-top-2 fade-in">
+                  <div className="bg-[#1E1E1E] border border-neutral-800 rounded-xl p-4 text-xs font-mono text-gray-300 shadow-inner overflow-hidden">
+                    <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-neutral-800 text-[11px] text-gray-400">
+                      <span className="flex items-center gap-2">
+                        <Terminal className="w-3.5 h-3.5 text-red-400" />
+                        <span className="text-white font-semibold">Backend Exception Traceback</span>
+                        {parsedError.lineInfo && (
+                          <span className="text-amber-400">({parsedError.lineInfo})</span>
+                        )}
+                      </span>
+                      <span className="text-gray-500 text-[10px]">
+                        Logged to VS Code / IDE Terminal
+                      </span>
+                    </div>
+
+                    <pre className="overflow-x-auto whitespace-pre-wrap leading-relaxed text-[11px] text-red-300 font-mono max-h-80 overflow-y-auto selection:bg-red-900 selection:text-white">
+                      {parsedError.rawStderr || parsedError.userMessage}
+                    </pre>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

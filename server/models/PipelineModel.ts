@@ -4,26 +4,9 @@ import { spawn } from 'child_process';
 import { SettingsModel } from './SettingsModel.js';
 import { FileModel } from './FileModel.js';
 import { StylometryEngine, StylometryProfile } from '../utils/stylometryEngine.js';
-
-export interface PipelineProgressStage {
-  step: number;
-  totalSteps: number;
-  percent: number;
-  stage: string;
-  details: string;
-  timestamp: number;
-}
-
-export interface PipelineState {
-  status: 'idle' | 'running' | 'completed' | 'error';
-  currentStage: PipelineProgressStage | null;
-  logs: string[];
-  lastError: string | null;
-  startedAt: string | null;
-  finishedAt: string | null;
-  profile: StylometryProfile | null;
-  skillContent: string | null;
-}
+import { ParsedPipelineError, PipelineProgressStage, PipelineState } from '../../src/types/index.js';
+import { ErrorClassifier } from '../utils/ErrorClassifier.js';
+import { Logger } from '../utils/logger.js';
 
 const DATA_DIR = path.resolve(process.cwd(), 'data');
 const RAW_DIR = path.join(DATA_DIR, 'raw');
@@ -39,6 +22,7 @@ export class PipelineModel {
     currentStage: null,
     logs: [],
     lastError: null,
+    parsedError: null,
     startedAt: null,
     finishedAt: null,
     profile: null,
@@ -87,38 +71,6 @@ export class PipelineModel {
     return process.platform === 'win32' ? 'python' : 'python3';
   }
 
-  private static async extractText(filePath: string): Promise<string> {
-    const pythonPath = this.getPythonExecutable();
-    const scriptPath = path.join(process.cwd(), 'server', 'utils', 'extract_text.py');
-
-    if (!fs.existsSync(scriptPath)) {
-      return fs.readFileSync(filePath, 'utf-8');
-    }
-
-    return new Promise((resolve, reject) => {
-      const proc = spawn(pythonPath, [scriptPath, filePath]);
-      let output = '';
-      proc.stdout.on('data', (data) => {
-        output += data.toString();
-      });
-      proc.stderr.on('data', (data) => {
-        console.error(`[Text Extractor] stderr: ${data}`);
-      });
-      proc.on('close', (code) => {
-        if (code !== 0) {
-          try {
-            const fallback = fs.readFileSync(filePath, 'utf-8');
-            resolve(fallback);
-          } catch (fallbackErr: any) {
-            reject(new Error(`Python extractor failed with code ${code} and fallback also failed: ${fallbackErr.message}`));
-          }
-        } else {
-          resolve(output.trim());
-        }
-      });
-    });
-  }
-
   /**
    * Run the complete pipeline by executing the backend pipeline scripts
    */
@@ -144,19 +96,20 @@ export class PipelineModel {
       },
       logs: [],
       lastError: null,
+      parsedError: null,
       startedAt: new Date().toISOString(),
       finishedAt: null,
       profile: null,
       skillContent: null,
     };
 
+    Logger.logPipelineStart(settings.OLLAMA_MODEL, 'Environment Verification');
     this.appendLog('Starting Personalized Humanizer pipeline execution...');
     this.appendLog(`Active Model: ${settings.OLLAMA_MODEL}, Temp: ${settings.GENERATION_TEMPERATURE}`);
-    this.appendLog(`Configured Sentence Dev: ±${settings.SENTENCE_WORD_COUNT_DEVIATION}, Para Dev: ±${settings.PARAGRAPH_WORD_COUNT_DEVIATION}`);
 
     try {
       // Step 1: Environment Verification
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 200));
       this.state.currentStage = {
         step: 1,
         totalSteps: 5,
@@ -165,66 +118,75 @@ export class PipelineModel {
         details: 'Verified data/raw, data/clean, data/profiles, data/output',
         timestamp: Date.now(),
       };
+      Logger.logPipelineStage(1, 5, 'Environment Verification', 'Workspace directories verified.');
       this.appendLog('Workspace directories verified and ready.');
 
       // Step 2: Ingestion & Sanitization (backend/scripts/ingest.py)
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 200));
+      const stage2Name = 'Ingestion & Sanitization';
       this.state.currentStage = {
         step: 2,
         totalSteps: 5,
         percent: 40,
-        stage: 'Ingestion & Sanitization',
+        stage: stage2Name,
         details: 'Scanning raw writing samples and aggregating clean text corpus',
         timestamp: Date.now(),
       };
+      Logger.logPipelineStage(2, 5, stage2Name, 'Aggregating corpus text.');
       this.appendLog('Starting ingestion and text sanitization...');
-      await this.runPythonScript('backend/scripts/ingest.py');
+      await this.runPythonScript('backend/scripts/ingest.py', stage2Name, settings.OLLAMA_MODEL);
       this.appendLog('Ingestion completed. Cleaned corpus written to data/clean/.');
 
       // Step 3: Feature Extraction (backend/scripts/extract_features.py)
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 200));
+      const stage3Name = 'Stylometry Feature Extraction';
       this.state.currentStage = {
         step: 3,
         totalSteps: 5,
         percent: 65,
-        stage: 'Stylometry Feature Extraction',
+        stage: stage3Name,
         details: 'Computing sentence length variance, burstiness index, and punctuation frequencies',
         timestamp: Date.now(),
       };
+      Logger.logPipelineStage(3, 5, stage3Name, 'Computing sentence length variance & burstiness.');
       this.appendLog('Starting feature extraction...');
-      await this.runPythonScript('backend/scripts/extract_features.py');
+      await this.runPythonScript('backend/scripts/extract_features.py', stage3Name, settings.OLLAMA_MODEL);
       this.appendLog('Feature extraction completed. Style profile written to data/profiles/style_profile.json.');
 
       // Step 4: Anti-AI Rule Synthesis and Guide Generation
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 200));
+      const stage4Name = 'Anti-AI Rule Synthesis & Guide Generation';
       this.state.currentStage = {
         step: 4,
         totalSteps: 5,
         percent: 85,
-        stage: 'Anti-AI Rule Synthesis & Guide Generation',
+        stage: stage4Name,
         details: 'Formulating detector bypass constraints, burstiness rules & prompt templates',
         timestamp: Date.now(),
       };
+      Logger.logPipelineStage(4, 5, stage4Name, 'Formulating rules and prompt templates.');
       this.appendLog('Starting Anti-AI rule synthesis and guide generation...');
-      await this.runPythonScript('backend/scripts/generate_profile_specific_anti_ai.py');
-      await this.runPythonScript('backend/scripts/build_guide_from_template.py');
-      await this.runPythonScript('backend/scripts/generate_few_shot_prompt.py');
-      await this.runPythonScript('backend/scripts/summarize.py');
+      await this.runPythonScript('backend/scripts/generate_profile_specific_anti_ai.py', stage4Name, settings.OLLAMA_MODEL);
+      await this.runPythonScript('backend/scripts/build_guide_from_template.py', stage4Name, settings.OLLAMA_MODEL);
+      await this.runPythonScript('backend/scripts/generate_few_shot_prompt.py', stage4Name, settings.OLLAMA_MODEL);
+      await this.runPythonScript('backend/scripts/summarize.py', stage4Name, settings.OLLAMA_MODEL);
       this.appendLog('Anti-AI rules and intermediate guides generated.');
 
       // Step 5: Output Packaging (generate_guide.py, merge_guides.py) and final SKILL.md creation
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 200));
+      const stage5Name = 'Output Packaging (SKILL.md)';
       this.state.currentStage = {
         step: 5,
         totalSteps: 5,
         percent: 100,
-        stage: 'Output Packaging (SKILL.md)',
+        stage: stage5Name,
         details: 'Exporting final skill definition to data/output/SKILL.md',
         timestamp: Date.now(),
       };
+      Logger.logPipelineStage(5, 5, stage5Name, 'Exporting skill definition.');
       this.appendLog('Starting final guide assembly and SKILL.md creation...');
-      await this.runPythonScript('backend/scripts/generate_guide.py');
-      await this.runPythonScript('backend/scripts/merge_guides.py');
+      await this.runPythonScript('backend/scripts/generate_guide.py', stage5Name, settings.OLLAMA_MODEL);
+      await this.runPythonScript('backend/scripts/merge_guides.py', stage5Name, settings.OLLAMA_MODEL);
 
       const completePath = path.join(OUTPUT_DIR, 'Personalized-Humanizer-Complete.md');
       if (fs.existsSync(completePath)) {
@@ -262,15 +224,31 @@ export class PipelineModel {
 
       return this.state;
     } catch (err: any) {
-      console.error('Pipeline execution error:', err);
       this.state.status = 'error';
-      this.state.lastError = err?.message || 'Unknown pipeline execution failure';
-      this.appendLog(`ERROR: ${this.state.lastError}`);
+      if (!this.state.parsedError) {
+        const parsed = ErrorClassifier.classify(
+          err?.message || 'Unknown pipeline execution failure',
+          'PipelineModel',
+          this.state.currentStage?.stage || 'Pipeline Execution',
+          settings.OLLAMA_MODEL
+        );
+        this.state.parsedError = parsed;
+        this.state.lastError = parsed.userMessage;
+        Logger.logPipelineError(parsed);
+      } else {
+        this.state.lastError = this.state.parsedError.userMessage;
+      }
+
+      this.appendLog(`ERROR [${this.state.parsedError.code}]: ${this.state.parsedError.userMessage}`);
       return this.state;
     }
   }
 
-  private static async runPythonScript(scriptPath: string): Promise<void> {
+  private static async runPythonScript(
+    scriptPath: string,
+    stageName?: string,
+    configuredModel?: string
+  ): Promise<void> {
     const projectRoot = path.resolve(process.cwd());
     const scriptAbsolute = path.join(projectRoot, scriptPath);
     const pythonPath = this.getPythonExecutable();
@@ -292,14 +270,22 @@ export class PipelineModel {
 
       proc.on('close', (code) => {
         if (code !== 0) {
-          reject(new Error(`Python script ${scriptPath} exited with code ${code}. Stderr: ${stderr}`));
+          const parsed = ErrorClassifier.classify(stderr || stdout || `Process exited with code ${code}`, scriptPath, stageName, configuredModel);
+          this.state.parsedError = parsed;
+          this.state.lastError = parsed.userMessage;
+          Logger.logPipelineError(parsed);
+          reject(new Error(parsed.userMessage));
         } else {
           resolve();
         }
       });
 
       proc.on('error', (err) => {
-        reject(new Error(`Failed to spawn python process for ${scriptPath}: ${err.message}`));
+        const parsed = ErrorClassifier.classify(`Failed to spawn python process: ${err.message}`, scriptPath, stageName, configuredModel);
+        this.state.parsedError = parsed;
+        this.state.lastError = parsed.userMessage;
+        Logger.logPipelineError(parsed);
+        reject(new Error(parsed.userMessage));
       });
     });
   }
