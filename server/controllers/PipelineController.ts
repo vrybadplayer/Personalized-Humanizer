@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PipelineModel } from '../models/PipelineModel.js';
+import { Logger } from '../utils/logger.js';
 
 export class PipelineController {
   public static async runPipeline(req: Request, res: Response): Promise<void> {
@@ -18,7 +19,13 @@ export class PipelineController {
         res.json({ success: true, state });
       }
     } catch (err: any) {
-      res.status(500).json({ success: false, error: err.message });
+      Logger.error(`[API /pipeline/run Error] ${err.message}`, err);
+      const state = PipelineModel.getState();
+      res.status(500).json({
+        success: false,
+        error: err.message,
+        parsedError: state.parsedError
+      });
     }
   }
 
@@ -27,6 +34,7 @@ export class PipelineController {
       const state = PipelineModel.getState();
       res.json({ success: true, state });
     } catch (err: any) {
+      Logger.error(`[API /pipeline/status Error] ${err.message}`, err);
       res.status(500).json({ success: false, error: err.message });
     }
   }
@@ -43,6 +51,7 @@ export class PipelineController {
       res.setHeader('Content-Disposition', 'attachment; filename="SKILL.md"');
       res.sendFile(streamInfo.path);
     } catch (err: any) {
+      Logger.error(`[API /pipeline/download Error] ${err.message}`, err);
       res.status(500).json({ success: false, error: err.message });
     }
   }
@@ -57,6 +66,7 @@ export class PipelineController {
         hasOutput: Boolean(state.skillContent)
       });
     } catch (err: any) {
+      Logger.error(`[API /pipeline/output Error] ${err.message}`, err);
       res.status(500).json({ success: false, error: err.message });
     }
   }
